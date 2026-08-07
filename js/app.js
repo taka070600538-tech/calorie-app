@@ -1,6 +1,7 @@
 import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
 import { renderFoodsView } from './foodForm.js';
+import { renderSettingsView } from './settings.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 
@@ -74,6 +75,11 @@ function bindNav() {
       const view = btn.dataset.view;
       if (view === 'foods') {
         openFoodsView();
+      } else if (view === 'settings') {
+        switchView('settings');
+        renderSettingsView(document.getElementById('view-settings'), state.db, state.goals, {
+          onSaved: refreshDashboard,
+        });
       } else {
         switchView(view);
       }
@@ -116,6 +122,10 @@ async function init() {
   bindMealActions();
   bindNav();
   await refreshDashboard();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
 }
 
 init();
