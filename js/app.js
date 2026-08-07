@@ -110,13 +110,31 @@ function bindMealActions() {
   });
 }
 
+function showStartupErrorBanner(message) {
+  const banner = document.createElement('div');
+  banner.className = 'startup-error-banner';
+  banner.textContent = message;
+  document.body.insertBefore(banner, document.body.firstChild);
+}
+
 async function init() {
-  state.db = await openDB();
-  const seedResponse = await fetch('data/foods.json');
-  const seedFoods = await seedResponse.json();
-  await seedFoodsIfEmpty(state.db, seedFoods);
-  state.foods = await getAllFoods(state.db);
-  state.goals = await getGoals(state.db);
+  try {
+    state.db = await openDB();
+  } catch (err) {
+    showStartupErrorBanner('データベースを利用できません。記録は保存されません。');
+    return;
+  }
+
+  try {
+    const seedResponse = await fetch('data/foods.json');
+    const seedFoods = await seedResponse.json();
+    await seedFoodsIfEmpty(state.db, seedFoods);
+    state.foods = await getAllFoods(state.db);
+    state.goals = await getGoals(state.db);
+  } catch (err) {
+    showStartupErrorBanner('食品データの読み込みに失敗しました。');
+    return;
+  }
 
   bindDateNav();
   bindMealActions();

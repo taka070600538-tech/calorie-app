@@ -111,7 +111,7 @@ const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 2
 export async function getGoals(db) {
   const tx = db.transaction('goals', 'readonly');
   const result = await promisifyRequest(tx.objectStore('goals').get('default'));
-  return result || DEFAULT_GOALS;
+  return result || { ...DEFAULT_GOALS };
 }
 
 export async function saveGoals(db, goals) {

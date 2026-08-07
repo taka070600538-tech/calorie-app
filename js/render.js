@@ -1,5 +1,11 @@
 import { calcProgress } from './nutrition.js';
 
+export function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  }[c]));
+}
+
 export function renderGoalSummary(container, totals, goals) {
   const rows = [
     { label: 'カロリー', unit: 'kcal', current: totals.kcal, goal: goals.kcal },
@@ -28,7 +34,7 @@ export function renderGoalSummary(container, totals, goals) {
     .join('');
 }
 
-const MEAL_TYPE_LABELS = {
+export const MEAL_TYPE_LABELS = {
   breakfast: '朝食',
   lunch: '昼食',
   dinner: '夕食',
@@ -45,7 +51,7 @@ export function renderMealSection(container, mealType, meals, foodsById) {
           const name = food ? food.name : (meal.freeText ?? '(削除済み食品)');
           return `
             <li class="meal-item" data-meal-id="${meal.id}">
-              <span class="meal-item-name">${name} ${meal.amountGrams}g</span>
+              <span class="meal-item-name">${escapeHtml(name)} ${meal.amountGrams}g</span>
               <span class="meal-item-kcal">${meal.kcal}kcal</span>
               <button class="meal-item-delete" data-action="delete-meal" data-meal-id="${meal.id}">削除</button>
             </li>

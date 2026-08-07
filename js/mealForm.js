@@ -1,8 +1,7 @@
 import { searchFoods } from './foodSearch.js';
 import { calcNutrientsForAmount } from './nutrition.js';
 import { addMeal } from './db.js';
-
-const MEAL_TYPE_LABELS = { breakfast: '朝食', lunch: '昼食', dinner: '夕食', snack: '間食' };
+import { escapeHtml, MEAL_TYPE_LABELS } from './render.js';
 
 export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, onRegisterNew }) {
   let selectedFood = null;
@@ -56,11 +55,16 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
   }
 
   queryInput.addEventListener('input', () => {
+    selectedFood = null;
+    selectedBox.classList.add('hidden');
+    previewBox.textContent = '';
+    saveBtn.disabled = true;
+
     const query = queryInput.value;
     const results = searchFoods(foods, query);
     noResult.classList.toggle('hidden', results.length > 0 || query.trim() === '');
     resultsList.innerHTML = results
-      .map((food) => `<li data-food-id="${food.id}">${food.name}</li>`)
+      .map((food) => `<li data-food-id="${food.id}">${escapeHtml(food.name)}</li>`)
       .join('');
   });
 

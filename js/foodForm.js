@@ -1,4 +1,5 @@
 import { addFood, updateFood, deleteFood } from './db.js';
+import { escapeHtml } from './render.js';
 
 export function renderFoodsView(container, db, foods, { prefillName = '', onChange } = {}) {
   container.innerHTML = `
@@ -52,7 +53,7 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
       .map(
         (food) => `
         <li data-food-id="${food.id}">
-          <span>${food.name}(${food.per100g.kcal}kcal/100g)</span>
+          <span>${escapeHtml(food.name)}(${food.per100g.kcal}kcal/100g)</span>
           <button type="button" data-action="edit" data-food-id="${food.id}">編集</button>
           <button type="button" data-action="delete" data-food-id="${food.id}">削除</button>
         </li>`
