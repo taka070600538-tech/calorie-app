@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カロリー計算</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="app-header">
+  <h1>カロリー計算</h1>
+  <nav class="app-nav">
+    <button data-view="dashboard" class="nav-btn is-active">今日の記録</button>
+    <button data-view="foods" class="nav-btn">食品管理</button>
+    <button data-view="settings" class="nav-btn">設定</button>
+  </nav>
+</header>
+
+<main id="view-dashboard" class="view">
+  <div class="date-nav">
+    <button id="prev-day">← 前日</button>
+    <span id="current-date"></span>
+    <button id="next-day">翌日 →</button>
+  </div>
+  <section id="goal-summary" class="goal-summary"></section>
+  <section id="meal-breakfast" class="meal-section" data-meal-type="breakfast"></section>
+  <section id="meal-lunch" class="meal-section" data-meal-type="lunch"></section>
+  <section id="meal-dinner" class="meal-section" data-meal-type="dinner"></section>
+  <section id="meal-snack" class="meal-section" data-meal-type="snack"></section>
+</main>
+
+<main id="view-foods" class="view hidden"></main>
+
+<main id="view-settings" class="view hidden"></main>
+
+<div id="modal-root"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

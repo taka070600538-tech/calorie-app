@@ -1,0 +1,7 @@
+{
+  "name": "calorie-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "毎日の食事カロリーを記録・計算するローカル完結PWA"
+}

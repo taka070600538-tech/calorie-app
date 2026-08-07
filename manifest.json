@@ -1,0 +1,11 @@
+{
+  "name": "カロリー計算",
+  "short_name": "カロリー計算",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2f6f4f",
+  "icons": [
+    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
