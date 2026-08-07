@@ -1,4 +1,5 @@
-import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals } from './db.js';
+import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal } from './db.js';
+import { openMealForm } from './mealForm.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 
@@ -49,6 +50,29 @@ function bindDateNav() {
   });
 }
 
+function bindMealActions() {
+  document.getElementById('view-dashboard').addEventListener('click', async (event) => {
+    const addBtn = event.target.closest('[data-action="add-meal"]');
+    if (addBtn) {
+      openMealForm({
+        modalRoot: document.getElementById('modal-root'),
+        db: state.db,
+        mealType: addBtn.dataset.mealType,
+        date: state.date,
+        foods: state.foods,
+        onSaved: refreshDashboard,
+        onRegisterNew: (name) => alert(`「${name}」の登録は「食品管理」画面で行ってください(次のタスクで対応します)`),
+      });
+      return;
+    }
+    const deleteBtn = event.target.closest('[data-action="delete-meal"]');
+    if (deleteBtn) {
+      await deleteMeal(state.db, Number(deleteBtn.dataset.mealId));
+      refreshDashboard();
+    }
+  });
+}
+
 async function init() {
   state.db = await openDB();
   const seedResponse = await fetch('data/foods.json');
@@ -58,6 +82,7 @@ async function init() {
   state.goals = await getGoals(state.db);
 
   bindDateNav();
+  bindMealActions();
   await refreshDashboard();
 }
 
