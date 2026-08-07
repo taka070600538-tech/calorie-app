@@ -1,5 +1,6 @@
 import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
+import { renderFoodsView } from './foodForm.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 
@@ -50,6 +51,36 @@ function bindDateNav() {
   });
 }
 
+function switchView(viewName) {
+  for (const view of document.querySelectorAll('.view')) {
+    view.classList.toggle('hidden', view.id !== `view-${viewName}`);
+  }
+  for (const btn of document.querySelectorAll('.nav-btn')) {
+    btn.classList.toggle('is-active', btn.dataset.view === viewName);
+  }
+}
+
+function openFoodsView(prefillName = '') {
+  switchView('foods');
+  renderFoodsView(document.getElementById('view-foods'), state.db, state.foods, {
+    prefillName,
+    onChange: refreshDashboard,
+  });
+}
+
+function bindNav() {
+  document.querySelectorAll('.nav-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = btn.dataset.view;
+      if (view === 'foods') {
+        openFoodsView();
+      } else {
+        switchView(view);
+      }
+    });
+  });
+}
+
 function bindMealActions() {
   document.getElementById('view-dashboard').addEventListener('click', async (event) => {
     const addBtn = event.target.closest('[data-action="add-meal"]');
@@ -61,7 +92,7 @@ function bindMealActions() {
         date: state.date,
         foods: state.foods,
         onSaved: refreshDashboard,
-        onRegisterNew: (name) => alert(`「${name}」の登録は「食品管理」画面で行ってください(次のタスクで対応します)`),
+        onRegisterNew: (name) => openFoodsView(name),
       });
       return;
     }
@@ -83,6 +114,7 @@ async function init() {
 
   bindDateNav();
   bindMealActions();
+  bindNav();
   await refreshDashboard();
 }
 
