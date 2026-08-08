@@ -71,6 +71,29 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
     resultsList.innerHTML = '';
   }
 
+  function findAutoSelectCandidate() {
+    if (currentResults.length === 0) return null;
+    const typed = queryInput.value.trim().toLowerCase();
+    const exactMatch = currentResults.find((food) => food.name.toLowerCase() === typed);
+    if (exactMatch) return exactMatch;
+    if (currentResults.length === 1) return currentResults[0];
+    return null;
+  }
+
+  // Tabや候補以外の場所へのクリックで候補一覧を閉じるとき、入力欄には
+  // 打ち込んだ文字がそのまま残るのに selectedFood は未確定のままで
+  // 保存ボタンが押せなくなる。候補が一意に絞れる場合はここで確定させる。
+  function commitPendingSelection() {
+    if (!selectedFood) {
+      const candidate = findAutoSelectCandidate();
+      if (candidate) {
+        selectFood(candidate);
+        return;
+      }
+    }
+    closeResults();
+  }
+
   function renderResults() {
     resultsList.innerHTML = currentResults
       .map((food, index) => `<li data-food-id="${food.id}" class="${index === activeIndex ? 'is-active' : ''}">${escapeHtml(food.name)}</li>`)
@@ -114,6 +137,9 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
       event.preventDefault();
       if (activeIndex >= 0 && currentResults[activeIndex]) {
         selectFood(currentResults[activeIndex]);
+      } else {
+        const candidate = findAutoSelectCandidate();
+        if (candidate) selectFood(candidate);
       }
     } else if (event.key === 'Escape') {
       closeResults();
@@ -129,14 +155,14 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
 
   function handleOutsideClick(event) {
     if (event.target === queryInput || resultsList.contains(event.target)) return;
-    closeResults();
+    commitPendingSelection();
   }
   document.addEventListener('click', handleOutsideClick);
 
   const combobox = modalRoot.querySelector('.food-combobox');
   combobox.addEventListener('focusout', () => {
     requestAnimationFrame(() => {
-      if (!combobox.contains(document.activeElement)) closeResults();
+      if (!combobox.contains(document.activeElement)) commitPendingSelection();
     });
   });
 
