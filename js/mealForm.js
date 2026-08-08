@@ -60,7 +60,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
       return;
     }
     const nutrients = calcNutrientsForAmount(selectedFood.per100g, amount);
-    previewBox.textContent = `${nutrients.kcal}kcal / P${nutrients.protein}g F${nutrients.fat}g C${nutrients.carb}g 塩分${nutrients.salt}g`;
+    previewBox.textContent = `${nutrients.kcal}kcal / タンパク質${nutrients.protein}g 脂質${nutrients.fat}g 糖質${nutrients.carb}g 塩分${nutrients.salt}g`;
     saveBtn.disabled = false;
   }
 
