@@ -138,25 +138,17 @@ async function copyPreviousDay() {
       alert('前日の記録がありません。');
       return;
     }
-    const confirmed = confirm(`前日(${previousDate})の記録${previousMeals.length}件を今日に追加しますか?`);
+    const confirmed = confirm(`${previousDate}の記録${previousMeals.length}件を${state.date}に追加しますか?`);
     if (!confirmed) return;
     for (const meal of previousMeals) {
-      await addMeal(state.db, {
-        date: state.date,
-        mealType: meal.mealType,
-        foodId: meal.foodId,
-        freeText: meal.freeText,
-        amountGrams: meal.amountGrams,
-        kcal: meal.kcal,
-        protein: meal.protein,
-        fat: meal.fat,
-        carb: meal.carb,
-        salt: meal.salt,
-      });
+      const { id, date: _sourceDate, ...rest } = meal;
+      await addMeal(state.db, { ...rest, date: state.date });
     }
-    await refreshDashboard();
   } catch (err) {
+    console.error(err);
     alert('前日の記録の転記に失敗しました。');
+  } finally {
+    await refreshDashboard();
   }
 }
 

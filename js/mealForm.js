@@ -22,7 +22,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
           <div id="meal-selected" class="meal-selected">
             <span id="meal-selected-name" class="meal-selected-name">${selectedFood ? escapeHtml(selectedFood.name) : '↑候補から食品を選択してください'}</span>
             <label>量(g)
-              <input type="number" id="meal-amount" value="${isEdit ? existingMeal.amountGrams : 100}" min="1" step="1">
+              <input type="number" id="meal-amount" value="${isEdit ? existingMeal.amountGrams : 100}" min="1" step="0.1">
             </label>
             <div id="meal-preview" class="meal-preview"></div>
           </div>
@@ -77,6 +77,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
   }
 
   function selectFood(food) {
+    if (!food) return;
     selectedFood = food;
     selectedName.textContent = food.name;
     queryInput.value = food.name;
@@ -131,10 +132,18 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
   }
   document.addEventListener('click', handleOutsideClick);
 
+  const combobox = modalRoot.querySelector('.food-combobox');
+  combobox.addEventListener('focusout', () => {
+    requestAnimationFrame(() => {
+      if (!combobox.contains(document.activeElement)) closeResults();
+    });
+  });
+
   amountInput.addEventListener('input', updatePreview);
 
   async function doSave() {
     if (!selectedFood) return;
+    saveBtn.disabled = true;
     const amount = Number(amountInput.value);
     const nutrients = calcNutrientsForAmount(selectedFood.per100g, amount);
     if (isEdit) {
@@ -161,7 +170,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
     if (event.key !== 'Enter') return;
     event.preventDefault();
     if (saveBtn.disabled) return;
-    doSave();
+    form.requestSubmit();
   });
 
   if (selectedFood) {
