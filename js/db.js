@@ -1,5 +1,5 @@
 const DB_NAME = 'calorie-app-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 export function openDB() {
   return new Promise((resolve, reject) => {
@@ -17,6 +17,21 @@ export function openDB() {
       if (!db.objectStoreNames.contains('goals')) {
         db.createObjectStore('goals', { keyPath: 'id' });
       }
+
+      // v1で同梱していたシード食品(source: 'mext')を削除し、食品一覧を白紙に戻す。
+      // v2以降に成分表から登録する食品は source: 'custom' なので巻き添えにならない。
+      if (event.oldVersion >= 1 && event.oldVersion < 2) {
+        const store = event.target.transaction.objectStore('foods');
+        const cursorRequest = store.openCursor();
+        cursorRequest.onsuccess = (cursorEvent) => {
+          const cursor = cursorEvent.target.result;
+          if (!cursor) return;
+          if (cursor.value.source === 'mext') {
+            cursor.delete();
+          }
+          cursor.continue();
+        };
+      }
     };
 
     request.onsuccess = (event) => resolve(event.target.result);
@@ -28,20 +43,6 @@ function promisifyRequest(request) {
   return new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
-  });
-}
-
-export async function seedFoodsIfEmpty(db, seedFoods) {
-  const existing = await getAllFoods(db);
-  if (existing.length > 0) return;
-  const tx = db.transaction('foods', 'readwrite');
-  const store = tx.objectStore('foods');
-  for (const food of seedFoods) {
-    store.put(food);
-  }
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
   });
 }
 

@@ -1,10 +1,9 @@
-const CACHE_NAME = 'calorie-app-v2';
+const CACHE_NAME = 'calorie-app-v3';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
-  './data/foods.json',
   './js/app.js',
   './js/db.js',
   './js/nutrition.js',

@@ -1,4 +1,4 @@
-import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } from './db.js';
+import { openDB, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
@@ -172,9 +172,6 @@ async function init() {
   }
 
   try {
-    const seedResponse = await fetch('data/foods.json');
-    const seedFoods = await seedResponse.json();
-    await seedFoodsIfEmpty(state.db, seedFoods);
     state.foods = await getAllFoods(state.db);
     state.goals = await getGoals(state.db);
   } catch (err) {
