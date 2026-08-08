@@ -223,17 +223,42 @@ body {
   margin-top: var(--spacing-xs);
 }
 
+.food-combobox {
+  position: relative;
+}
+
 .food-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 5;
   list-style: none;
-  margin: 0 0 var(--spacing-sm) 0;
+  margin: var(--spacing-xs) 0 0 0;
   padding: 0;
   max-height: 160px;
   overflow-y: auto;
 }
 
+.food-results:not(:empty) {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 .food-results li {
   padding: var(--spacing-sm);
   border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.food-results li:last-child {
+  border-bottom: none;
+}
+
+.food-results li.is-active {
+  background: var(--color-bg);
 }
 
 .meal-selected-name {
@@ -302,5 +327,17 @@ body {
   align-items: center;
   padding: var(--spacing-sm) 0;
   border-bottom: 1px solid var(--color-border);
+  font-size: 0.9rem;
+}
+
+.copy-previous-day-btn {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-primary);
   font-size: 0.9rem;
 }

@@ -1,4 +1,4 @@
-import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal } from './db.js';
+import { openDB, seedFoodsIfEmpty, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
@@ -130,6 +130,32 @@ function bindMealActions() {
   });
 }
 
+async function copyPreviousDay() {
+  const previousDate = shiftDate(state.date, -1);
+  try {
+    const previousMeals = await getMealsByDate(state.db, previousDate);
+    if (previousMeals.length === 0) {
+      alert('前日の記録がありません。');
+      return;
+    }
+    const confirmed = confirm(`${previousDate}の記録${previousMeals.length}件を${state.date}に追加しますか?`);
+    if (!confirmed) return;
+    for (const meal of previousMeals) {
+      const { id, date: _sourceDate, ...rest } = meal;
+      await addMeal(state.db, { ...rest, date: state.date });
+    }
+  } catch (err) {
+    console.error(err);
+    alert('前日の記録の転記に失敗しました。');
+  } finally {
+    await refreshDashboard();
+  }
+}
+
+function bindCopyPreviousDay() {
+  document.getElementById('copy-previous-day').addEventListener('click', copyPreviousDay);
+}
+
 function showStartupErrorBanner(message) {
   const banner = document.createElement('div');
   banner.className = 'startup-error-banner';
@@ -158,6 +184,7 @@ async function init() {
 
   bindDateNav();
   bindMealActions();
+  bindCopyPreviousDay();
   bindNav();
   await refreshDashboard();
 

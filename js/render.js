@@ -61,9 +61,9 @@ export function renderMealSection(container, mealType, meals, foodsById) {
               <div class="meal-item-row2">
                 <span>${meal.amountGrams}g</span>
                 <span>${meal.kcal}kcal</span>
-                <span>P${meal.protein}g</span>
-                <span>F${meal.fat}g</span>
-                <span>C${meal.carb}g</span>
+                <span>タンパク質${meal.protein}g</span>
+                <span>脂質${meal.fat}g</span>
+                <span>糖質${meal.carb}g</span>
                 <span>塩分${meal.salt}g</span>
               </div>
             </li>
