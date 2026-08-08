@@ -47,7 +47,7 @@ gitで追跡していない)。改訂版を取り込む場合は、`tools/build_
 ## テスト
 
 ```bash
-node --test tests/
+node --test tests/*.test.js
 ```
 
 ```bash
