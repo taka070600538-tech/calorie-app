@@ -12,6 +12,7 @@ const state = {
   foods: [],
   goals: null,
   db: null,
+  meals: [],
 };
 
 function formatDate(d) {
@@ -30,6 +31,7 @@ function shiftDate(dateStr, days) {
 async function refreshDashboard() {
   document.getElementById('current-date').textContent = state.date;
   const meals = await getMealsByDate(state.db, state.date);
+  state.meals = meals;
   const foodsById = Object.fromEntries(state.foods.map((f) => [f.id, f]));
   const totals = sumNutrients(meals);
 
@@ -102,6 +104,24 @@ function bindMealActions() {
       });
       return;
     }
+    const editBtn = event.target.closest('[data-action="edit-meal"]');
+    if (editBtn) {
+      const mealId = Number(editBtn.dataset.mealId);
+      const existingMeal = state.meals.find((m) => m.id === mealId);
+      if (!existingMeal) return;
+      openMealForm({
+        modalRoot: document.getElementById('modal-root'),
+        db: state.db,
+        mealType: existingMeal.mealType,
+        date: state.date,
+        foods: state.foods,
+        existingMeal,
+        onSaved: refreshDashboard,
+        onRegisterNew: (name) => openFoodsView(name),
+      });
+      return;
+    }
+
     const deleteBtn = event.target.closest('[data-action="delete-meal"]');
     if (deleteBtn) {
       await deleteMeal(state.db, Number(deleteBtn.dataset.mealId));

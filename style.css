@@ -140,18 +140,48 @@ body {
 .meal-list { list-style: none; margin: 0; padding: 0; }
 
 .meal-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-xs) 0;
+  padding: var(--spacing-sm) 0;
   border-bottom: 1px solid var(--color-border);
 }
 
+.meal-item-row1 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-item-name {
+  font-weight: bold;
+}
+
+.meal-item-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.meal-item-edit,
 .meal-item-delete {
   border: none;
   background: none;
-  color: var(--color-danger);
   font-size: 0.8rem;
+}
+
+.meal-item-edit {
+  color: var(--color-primary);
+}
+
+.meal-item-delete {
+  color: var(--color-danger);
+}
+
+.meal-item-row2 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xs);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
 }
 
 .meal-empty {
@@ -204,6 +234,14 @@ body {
 .food-results li {
   padding: var(--spacing-sm);
   border-bottom: 1px solid var(--color-border);
+}
+
+.meal-selected-name {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-sm);
 }
 
 .meal-preview {

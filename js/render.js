@@ -51,9 +51,21 @@ export function renderMealSection(container, mealType, meals, foodsById) {
           const name = food ? food.name : (meal.freeText ?? '(削除済み食品)');
           return `
             <li class="meal-item" data-meal-id="${meal.id}">
-              <span class="meal-item-name">${escapeHtml(name)} ${meal.amountGrams}g</span>
-              <span class="meal-item-kcal">${meal.kcal}kcal</span>
-              <button class="meal-item-delete" data-action="delete-meal" data-meal-id="${meal.id}">削除</button>
+              <div class="meal-item-row1">
+                <span class="meal-item-name">${escapeHtml(name)}</span>
+                <div class="meal-item-actions">
+                  <button class="meal-item-edit" data-action="edit-meal" data-meal-id="${meal.id}">編集</button>
+                  <button class="meal-item-delete" data-action="delete-meal" data-meal-id="${meal.id}">削除</button>
+                </div>
+              </div>
+              <div class="meal-item-row2">
+                <span>${meal.amountGrams}g</span>
+                <span>${meal.kcal}kcal</span>
+                <span>P${meal.protein}g</span>
+                <span>F${meal.fat}g</span>
+                <span>C${meal.carb}g</span>
+                <span>塩分${meal.salt}g</span>
+              </div>
             </li>
           `;
         })

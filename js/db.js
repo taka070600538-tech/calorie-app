@@ -97,6 +97,15 @@ export async function addMeal(db, meal) {
   });
 }
 
+export async function updateMeal(db, meal) {
+  const tx = db.transaction('meals', 'readwrite');
+  tx.objectStore('meals').put(meal);
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function deleteMeal(db, id) {
   const tx = db.transaction('meals', 'readwrite');
   tx.objectStore('meals').delete(id);
