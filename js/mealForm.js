@@ -133,18 +133,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
 
   amountInput.addEventListener('input', updatePreview);
 
-  if (selectedFood) {
-    updatePreview();
-  }
-
-  registerNewBtn.addEventListener('click', () => {
-    const name = queryInput.value.trim();
-    closeModal();
-    onRegisterNew(name);
-  });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
+  async function doSave() {
     if (!selectedFood) return;
     const amount = Number(amountInput.value);
     const nutrients = calcNutrientsForAmount(selectedFood.per100g, amount);
@@ -166,6 +155,28 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
     }
     closeModal();
     onSaved();
+  }
+
+  amountInput.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    if (saveBtn.disabled) return;
+    doSave();
+  });
+
+  if (selectedFood) {
+    updatePreview();
+  }
+
+  registerNewBtn.addEventListener('click', () => {
+    const name = queryInput.value.trim();
+    closeModal();
+    onRegisterNew(name);
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    doSave();
   });
 
   cancelBtn.addEventListener('click', closeModal);
