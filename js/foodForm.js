@@ -65,7 +65,6 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
   }
 
   function fillFormFromMext(mextFood) {
-    idInput.value = '';
     mextCodeInput.value = mextFood.code;
     nameInput.value = mextFood.name;
     kcalInput.value = mextFood.per100g.kcal;
@@ -84,7 +83,7 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
 
   function renderMextResults(results) {
     if (results.length === 0) {
-      renderMextMessage('該当する品目がありません');
+      renderMextMessage('該当する品目がありません。ひらがな・漢字など表記を変えてお試しください(例: 豚肉 → ぶた)');
       return;
     }
     mextResults.innerHTML = results

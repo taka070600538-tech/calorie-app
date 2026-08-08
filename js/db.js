@@ -34,7 +34,12 @@ export function openDB() {
       }
     };
 
-    request.onsuccess = (event) => resolve(event.target.result);
+    request.onblocked = () => reject(new Error('他のタブでアプリが開いています。すべて閉じてから再読み込みしてください。'));
+    request.onsuccess = (event) => {
+      const db = event.target.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = (event) => reject(event.target.error);
   });
 }
