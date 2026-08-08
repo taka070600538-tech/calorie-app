@@ -397,3 +397,11 @@ body {
   color: var(--color-text-muted);
   font-size: 0.9rem;
 }
+
+.meal-no-foods {
+  margin: 0 0 var(--spacing-sm) 0;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 0.85rem;
+}

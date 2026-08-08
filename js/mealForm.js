@@ -14,6 +14,7 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
       <div class="modal">
         <h2>${MEAL_TYPE_LABELS[mealType]}を${isEdit ? '編集' : '追加'}</h2>
         <form id="meal-form">
+          ${foods.length === 0 ? '<p class="meal-no-foods">まだ食品が登録されていません。下部の「食品」から登録してください。</p>' : ''}
           <label for="meal-food-query">食品名</label>
           <div class="food-combobox">
             <input type="text" id="meal-food-query" autocomplete="off" placeholder="例: 白米">
