@@ -54,7 +54,7 @@ python tools/build_dish_database.py
 
 `tools/cache/kurume_dishes.csv` が無ければ自動でダウンロードする(このディレクトリはgitで追跡していない)。実行すると `data/kurume-dishes.json` と `docs/料理/*.md` が再生成される。
 
-出典: 久留米市「料理の栄養価一覧」(久留米市保健所健康推進課、クリエイティブ・コモンズ表示 CC BY)
+出典: 久留米市「料理の栄養価一覧」(CC BY)
 https://data.bodik.jp/dataset/402036_0009100_00005
 
 ## テスト
