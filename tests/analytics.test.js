@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { groupMealsByDate, calcPeriodStats } from '../js/analytics.js';
+// analyticsView.js はDOM操作を行う renderAnalyticsView も含むが、それらはすべて関数本体の中にあり、
+// モジュールの読み込み時（トップレベル）では document/window に触れない（METRICS/PRESETSは単なる配列リテラル）。
+// node -e での動的importでも問題なく読み込めることを確認済み。
+import { METRICS } from '../js/analyticsView.js';
 
 function meal(date, kcal, protein, fat, carb, salt) {
   return { date, kcal, protein, fat, carb, salt };
@@ -39,6 +43,26 @@ test('groupMealsByDate: 記録の無い日は要素にならない', () => {
 
 test('groupMealsByDate: 空配列は空配列を返す', () => {
   assert.deepEqual(groupMealsByDate([]), []);
+});
+
+test('groupMealsByDate: METRICSの全キーが日別集計の各エントリに数値として存在する', () => {
+  // analyticsView.js の renderChartSection は day[metric.key] という形でアクセスするため、
+  // METRICS のキーと groupMealsByDate が返すオブジェクトのプロパティ名が一致していないと、
+  // 全テストが緑のままグラフだけが static に壊れる（NaN座標で空描画）。その契約をここで固定する。
+  const meals = [
+    meal('2026-08-01', 500, 20, 15, 60, 1.5),
+    meal('2026-08-02', 300, 10, 5, 40, 0.5),
+  ];
+  const result = groupMealsByDate(meals);
+  assert.equal(result.length, 2);
+  for (const day of result) {
+    for (const metric of METRICS) {
+      assert.ok(
+        Number.isFinite(day[metric.key]),
+        `${metric.key} should be a finite number on ${day.date}, got ${day[metric.key]}`
+      );
+    }
+  }
 });
 
 test('calcPeriodStats: 平均・摂取合計・消費合計を計算する', () => {
