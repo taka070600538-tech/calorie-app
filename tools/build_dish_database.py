@@ -30,6 +30,70 @@ FIRST_INGREDIENT_COLUMN = 8
 INGREDIENT_SLOT_COUNT = 20
 NUTRIENT_KEYS = ("kcal", "protein", "fat", "carb", "salt")
 
+# 期待するCSVヘッダー(先頭7列)。列の並びが変わった場合に誤った栄養値を
+# 書き込んでしまわないよう、read_dishesで実際のヘッダーと突き合わせる。
+EXPECTED_HEADER_PREFIXES = (
+    "料理の種類",
+    "料理名",
+    "エネルギー",
+    "たんぱく質",
+    "脂質",
+    "炭水化物",
+    "食塩相当量",
+)
+
+# 「1人前の値 ÷ 材料重量合計」という換算は、材料重量の合計が出来上がりの
+# 料理の重量とほぼ等しいという前提で成り立つ。この前提が崩れる代表的な
+# 2パターンを検出する。
+#
+# 1. 米・麺類を炊く/茹でる前の乾物・生の状態のまま材料欄に記載している料理。
+#    水を吸って重量が増えるため、材料重量の合計が出来上がりより軽くなり、
+#    per100gが過大評価される。CSV全286行を確認し、実際にこの状態で
+#    per100gが破綻していたのは以下の材料名を使う行のみだった
+#    (「めし・精白米」のように調理後を表す名前は対象外)。
+RAW_STAPLE_INGREDIENTS = (
+    "米・精白米（水稲）",
+    "大麦・押麦",
+    "マカロニ・スパゲッティ＿乾",
+    "中華めん＿生",
+)
+# 乾物・生材料の影響でper100g kcalがこの値を超えたら「実態と大きくずれている」
+# とみなす(調味料カテゴリは1回分の使用量が少なく高kcal/100gが正常なため対象外)。
+RAW_STAPLE_KCAL_THRESHOLD = 300
+
+# 2. 汁物カテゴリなのに、だし・牛乳など「水分」にあたる材料が記載されておらず、
+#    具材と調味料の重量だけで割ってしまっている料理。塩分などが実際の数倍に
+#    跳ね上がる。「だし」「つゆ」「牛乳」を含む材料名が1つも無ければ該当。
+#    (「固形コンソメ」は溶かす水が別途必要なため、それ単体は水分とみなさない)
+SOUP_GROUP_MARKER = "汁物"
+LIQUID_INGREDIENT_MARKERS = ("だし", "つゆ", "牛乳")
+
+
+def is_unreliable_conversion(group, ingredients, per100g):
+    """per100gへの逆算が実態と大きくずれている疑いがあるかを判定する。
+
+    group: 料理の種類(カテゴリ名)
+    ingredients: [(材料名, 重量g), ...]
+    per100g: calc_per100gの戻り値({"kcal": ..., ...})。Noneの場合はFalseを返す。
+    """
+    if per100g is None:
+        return False
+
+    names = [name for name, _weight in ingredients]
+
+    if group != "調味料" and per100g["kcal"] > RAW_STAPLE_KCAL_THRESHOLD:
+        if any(marker in name for name in names for marker in RAW_STAPLE_INGREDIENTS):
+            return True
+
+    if SOUP_GROUP_MARKER in group:
+        has_liquid = any(
+            marker in name for name in names for marker in LIQUID_INGREDIENT_MARKERS
+        )
+        if not has_liquid:
+            return True
+
+    return False
+
 
 def parse_ingredients(row):
     """CSVの1行から、材料名と重量(g)のペアのリストを返す。
@@ -37,6 +101,9 @@ def parse_ingredients(row):
     材料欄は最大20スロット(材料名・重量のペア)あるが、使われていないスロットは
     両方とも空文字になっている。名前か重量のどちらかが空なら、そのスロットは
     使われていないとみなしてスキップする。
+
+    重量欄に「少々」「適量」のような数値に変換できない文字列が入っている場合は
+    ValueErrorを送出する(呼び出し側でその行をスキップする想定)。
     """
     ingredients = []
     for slot in range(INGREDIENT_SLOT_COUNT):
@@ -46,7 +113,13 @@ def parse_ingredients(row):
         weight_raw = row[weight_col].strip() if weight_col < len(row) else ""
         if name == "" or weight_raw == "":
             continue
-        ingredients.append((name, float(weight_raw)))
+        try:
+            weight = float(weight_raw)
+        except ValueError as exc:
+            raise ValueError(
+                f"材料「{name}」の重量が数値ではありません: {weight_raw!r}"
+            ) from exc
+        ingredients.append((name, weight))
     return ingredients
 
 
@@ -62,13 +135,23 @@ def calc_per100g(per_serving, weight_total):
     「per100gの値 × 入力g数」というデータモデルに合わせるための逆算。
     weight_total が 0 の行は換算できないため None を返す(実データには存在しないが、
     将来のデータ更新に備えた防御)。
+
+    per_servingの値が「少々」「適量」のような数値に変換できない文字列の場合は
+    ValueErrorを送出する(呼び出し側でその行をスキップする想定)。
     """
     if weight_total == 0:
         return None
-    return {
-        key: round(float(per_serving[key]) / weight_total * 100, 1)
-        for key in NUTRIENT_KEYS
-    }
+    result = {}
+    for key in NUTRIENT_KEYS:
+        raw = per_serving[key]
+        try:
+            value = float(raw)
+        except ValueError as exc:
+            raise ValueError(
+                f"栄養値「{key}」が数値ではありません: {raw!r}"
+            ) from exc
+        result[key] = round(value / weight_total * 100, 1)
+    return result
 
 
 def number_categories(category_sequence):
@@ -96,26 +179,60 @@ def download_source_if_needed():
     return CACHE_PATH
 
 
+def validate_header(header_row):
+    """CSVの1行目が期待するヘッダーかを検証する。
+
+    列順が変わったり列が増減したりしていると、以降の列番号決め打ちの処理が
+    気づかないまま誤った栄養値を書き込んでしまうため、事前に食い止める。
+    """
+    for index, expected_prefix in enumerate(EXPECTED_HEADER_PREFIXES):
+        actual = header_row[index].strip() if index < len(header_row) else ""
+        if not actual.startswith(expected_prefix):
+            raise ValueError(
+                "CSVのヘッダーが想定と異なります。列の並びが変わっていないか確認してください。"
+                f" (列{index + 1}: 期待='{expected_prefix}...' 実際='{actual}')"
+            )
+
+
 def read_dishes(csv_path):
     """CSVを読み、料理レコードのリストを返す。"""
     with io.open(csv_path, encoding="utf-8-sig", newline="") as f:
         reader = csv.reader(f)
         rows = list(reader)
+    validate_header(rows[0])
     data_rows = [row for row in rows[1:] if len(row) > 1 and row[1].strip()]
 
     category_numbers = number_categories([row[0].strip() for row in data_rows])
 
     dishes = []
-    skipped = 0
+    skipped_zero_weight = 0
+    skipped_non_numeric = 0
+    skipped_unreliable = 0
     for index, row in enumerate(data_rows, start=1):
         category = row[0].strip()
         name = row[1].strip()
         per_serving = {key: row[col].strip() for key, col in NUTRIENT_COLUMNS.items()}
-        ingredients = parse_ingredients(row)
+        try:
+            ingredients = parse_ingredients(row)
+        except ValueError as exc:
+            skipped_non_numeric += 1
+            print(f"警告: 「{name}」の材料重量が数値ではないためスキップしました: {exc}", file=sys.stderr)
+            continue
         weight_total = ingredient_weight_total(ingredients)
-        per100g = calc_per100g(per_serving, weight_total)
+        if weight_total == 0:
+            skipped_zero_weight += 1
+            continue
+        try:
+            per100g = calc_per100g(per_serving, weight_total)
+        except ValueError as exc:
+            skipped_non_numeric += 1
+            print(f"警告: 「{name}」の栄養値が数値ではないためスキップしました: {exc}", file=sys.stderr)
+            continue
         if per100g is None:
-            skipped += 1
+            skipped_zero_weight += 1
+            continue
+        if is_unreliable_conversion(category, ingredients, per100g):
+            skipped_unreliable += 1
             continue
         dishes.append(
             {
@@ -131,8 +248,15 @@ def read_dishes(csv_path):
                 "_weight_total": weight_total,
             }
         )
-    if skipped:
-        print(f"警告: 材料重量の合計が0の行を{skipped}件スキップしました", file=sys.stderr)
+    if skipped_zero_weight:
+        print(f"警告: 材料重量の合計が0の行を{skipped_zero_weight}件スキップしました", file=sys.stderr)
+    if skipped_non_numeric:
+        print(f"警告: 数値に変換できない値を含む行を{skipped_non_numeric}件スキップしました", file=sys.stderr)
+    if skipped_unreliable:
+        print(
+            f"警告: per100gへの換算が実態と大きくずれる疑いのある行を{skipped_unreliable}件除外しました",
+            file=sys.stderr,
+        )
     return dishes
 
 
