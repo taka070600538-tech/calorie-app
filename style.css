@@ -405,3 +405,15 @@ body {
   background: var(--color-bg);
   font-size: 0.85rem;
 }
+
+.settings-heading {
+  margin: var(--spacing-md) 0 var(--spacing-xs) 0;
+  font-size: 0.95rem;
+  color: var(--color-primary-dark);
+}
+
+.settings-note {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}

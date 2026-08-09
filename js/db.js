@@ -94,6 +94,13 @@ export async function getMealsByDate(db, date) {
   return promisifyRequest(index.getAll(date));
 }
 
+export async function getMealsByDateRange(db, from, to) {
+  const tx = db.transaction('meals', 'readonly');
+  const index = tx.objectStore('meals').index('by_date');
+  // date は 'YYYY-MM-DD' で辞書順が時系列順と一致するため範囲クエリが成立する。
+  return promisifyRequest(index.getAll(IDBKeyRange.bound(from, to)));
+}
+
 export async function addMeal(db, meal) {
   const tx = db.transaction('meals', 'readwrite');
   const request = tx.objectStore('meals').add(meal);
@@ -121,12 +128,13 @@ export async function deleteMeal(db, id) {
   });
 }
 
-const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0 };
+const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0, expenditureKcal: 2000 };
 
 export async function getGoals(db) {
   const tx = db.transaction('goals', 'readonly');
   const result = await promisifyRequest(tx.objectStore('goals').get('default'));
-  return result || { ...DEFAULT_GOALS };
+  // 既存レコードに新しいフィールドが無い場合も既定値で埋める。
+  return { ...DEFAULT_GOALS, ...(result || {}) };
 }
 
 export async function saveGoals(db, goals) {
