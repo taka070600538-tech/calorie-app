@@ -249,12 +249,12 @@ Task 1の純粋関数を使い、CSVのダウンロード・読み込み・出�
 **Files:**
 - Modify: `tools/build_dish_database.py`(Task 1で作成したファイルに追記)
 - Create: `data/kurume-dishes.json`(スクリプトの生成物)
-- Create: `docs/料理/01_ごはん.md` 〜 `docs/料理/25_調味料.md`(スクリプトの生成物、25ファイル)
+- Create: `docs/料理/01_ごはん.md` 〜 `docs/料理/26_調味料.md`(スクリプトの生成物、26ファイル)
 
 **Interfaces:**
 - Consumes: Task 1の `parse_ingredients(row)`, `ingredient_weight_total(ingredients)`, `calc_per100g(per_serving, weight_total)`, `number_categories(category_sequence)`
 - Produces:
-  - `data/kurume-dishes.json` — 配列。各要素は `{"code": "K011", "group": "ごはん", "name": "親子丼", "per100g": {"kcal": 132.5, "protein": 5.7, "fat": 1.8, "carb": 22.1, "salt": 0.4}}`。この形式を Task 3 の `js/dishTable.js` が読む。
+  - `data/kurume-dishes.json` — 配列。各要素は `{"code": "K009", "group": "ごはん", "name": "親子丼", "per100g": {"kcal": 132.5, "protein": 5.7, "fat": 1.8, "carb": 22.1, "salt": 0.4}}`。この形式を Task 3 の `js/dishTable.js` が読む。
 
 - [ ] **Step 1: `tools/build_dish_database.py` に読み込み・出力処理を追記する**
 
@@ -445,7 +445,7 @@ python tools/build_dish_database.py
 
 ```
 書き出しました: .../data/kurume-dishes.json (286品目)
-書き出しました: .../docs/料理 (25ファイル)
+書き出しました: .../docs/料理 (26ファイル)
 検証: 286品目
 ```
 
@@ -460,7 +460,7 @@ python -c "import json,io; d=json.load(io.open('data/kurume-dishes.json',encodin
 ```
 
 期待する結果: 件数が `286`、親子丼のレコードが
-`{'code': 'K011', 'group': 'ごはん', 'name': '親子丼', 'per100g': {'kcal': 132.5, 'protein': 5.7, 'fat': 1.8, 'carb': 22.1, 'salt': 0.4}}`
+`{'code': 'K009', 'group': 'ごはん', 'name': '親子丼', 'per100g': {'kcal': 132.5, 'protein': 5.7, 'fat': 1.8, 'carb': 22.1, 'salt': 0.4}}`
 と一致すること。
 
 続いて、生成されたMarkdownの1つを確認する。
@@ -469,7 +469,7 @@ python -c "import json,io; d=json.load(io.open('data/kurume-dishes.json',encodin
 ls "docs/料理/" && head -15 "docs/料理/01_ごはん.md"
 ```
 
-期待する結果: 25ファイルが存在し、`01_ごはん.md` の見出しが `# ごはん`、品目数が `18`、親子丼の項目に1人前の値(665kcal等)と可食部100gあたりの値(132.5kcal等)、材料リストが記載されていること。
+期待する結果: 26ファイルが存在し、`01_ごはん.md` の見出しが `# ごはん`、品目数が `18`、親子丼の項目に1人前の値(665kcal等)と可食部100gあたりの値(132.5kcal等)、材料リストが記載されていること。
 
 - [ ] **Step 4: コミットする**
 
@@ -505,7 +505,7 @@ import assert from 'node:assert/strict';
 import { searchDishes } from '../js/dishTable.js';
 
 const TABLE = [
-  { code: 'K011', group: 'ごはん', name: '親子丼', per100g: { kcal: 132.5, protein: 5.7, fat: 1.8, carb: 22.1, salt: 0.4 } },
+  { code: 'K009', group: 'ごはん', name: '親子丼', per100g: { kcal: 132.5, protein: 5.7, fat: 1.8, carb: 22.1, salt: 0.4 } },
   { code: 'K012', group: 'ごはん', name: 'カツ丼', per100g: { kcal: 176.2, protein: 6.2, fat: 6.3, carb: 21.8, salt: 0.6 } },
   { code: 'K039', group: '麺', name: 'かけうどん', per100g: { kcal: 45.0, protein: 1.5, fat: 0.3, carb: 8.9, salt: 0.4 } },
   { code: 'K045', group: '肉料理＿煮物・茹でる', name: '肉じゃが', per100g: { kcal: 78.0, protein: 4.3, fat: 1.3, carb: 11.7, salt: 1.2 } },
@@ -1006,7 +1006,7 @@ python -m http.server 8900
 - 「料理から探す」に「親子丼」と入力すると候補が表示され、「ごはん / 132.5kcal」のような補足が出ること
 - 候補をクリックすると登録フォームに名前と栄養値(132.5kcal / 5.7 / 1.8 / 22.1 / 0.4)が入り、食品名が全選択された状態になること
 - 保存すると登録済み一覧に「親子丼(132.5kcal/100g)」が追加されること
-- devtoolsの Application → IndexedDB → foods で、保存されたレコードに`kurumeId: "K011"`と`source: "custom"`が入っており、`mextCode`は入っていないこと
+- devtoolsの Application → IndexedDB → foods で、保存されたレコードに`kurumeId: "K009"`と`source: "custom"`が入っており、`mextCode`は入っていないこと
 - 逆に成分表から候補を選んで保存すると、`mextCode`は入るが`kurumeId`は入らないこと
 - 「成分表から探す」で入力しても「料理から探す」の候補一覧には影響がなく、その逆も同様であること(2つの検索欄が独立していること)
 - 存在しない語を「料理から探す」に入力すると「該当する料理がありません」と出ること
