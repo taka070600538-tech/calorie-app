@@ -14,19 +14,13 @@ const PLOT_BOTTOM = VIEW_HEIGHT - PAD_BOTTOM;
 const PLOT_WIDTH = PLOT_RIGHT - PLOT_LEFT;
 const PLOT_HEIGHT = PLOT_BOTTOM - PLOT_TOP;
 
-// y軸の上端を切りのいい値へ切り上げる。刻みは 10^floor(log10(v)) / 2。
-// 2100 → 刻み500 → 2500、65 → 刻み5 → 65、7.3 → 刻み0.5 → 7.5。
-// 値が0以下のときは1を返し、全点が下端に重なって潰れるのを防ぐ。
-export function niceCeil(value) {
-  if (!(value > 0)) return 1;
-  const step = Math.pow(10, Math.floor(Math.log10(value))) / 2;
-  // 7.3 / 0.5 のような割り算は誤差が出るので、切り上げ前に丸める。
-  const ratio = Math.ceil(Number((value / step).toFixed(10)));
-  return Number((ratio * step).toFixed(10));
-}
-
 function round2(n) {
   return Math.round(n * 100) / 100;
+}
+
+// 軸ラベル表示用に小数1桁へ丸める(整数値は"2200"のように小数点無しで表示される)。
+function round1(n) {
+  return Math.round(n * 10) / 10;
 }
 
 function toMonthDay(dateStr) {
@@ -36,7 +30,18 @@ function toMonthDay(dateStr) {
 
 export function buildLineChartSvg(points, { goalValue, unit, fromDate, toDate }) {
   const values = points.map((p) => p.value);
-  const maxValue = niceCeil(Math.max(goalValue || 0, ...values, 0));
+  // y軸は表示期間中の最高値の110%を上端、最低値の90%を下端とする(小さな変動を見やすくするズーム表示)。
+  let axisTop = Math.max(...values) * 1.1;
+  let axisBottom = Math.min(...values) * 0.9;
+  // 目標線が常に見えるよう、範囲外なら目標値まで拡張する。
+  if (goalValue > 0) {
+    if (goalValue > axisTop) axisTop = goalValue;
+    if (goalValue < axisBottom) axisBottom = goalValue;
+  }
+  // 全点と目標値が同じ(0を含む)場合に範囲が潰れるのを防ぐ。
+  if (axisTop <= axisBottom) axisTop = axisBottom + 1;
+  const axisSpan = axisTop - axisBottom;
+
   const spanDays = diffDays(fromDate, toDate);
 
   const xFor = (dateStr) => {
@@ -44,7 +49,7 @@ export function buildLineChartSvg(points, { goalValue, unit, fromDate, toDate })
     if (spanDays <= 0) return PLOT_LEFT + PLOT_WIDTH / 2;
     return PLOT_LEFT + (diffDays(fromDate, dateStr) / spanDays) * PLOT_WIDTH;
   };
-  const yFor = (value) => PLOT_TOP + PLOT_HEIGHT * (1 - value / maxValue);
+  const yFor = (value) => PLOT_TOP + PLOT_HEIGHT * (1 - (value - axisBottom) / axisSpan);
 
   const coords = points.map((p) => ({ x: round2(xFor(p.date)), y: round2(yFor(p.value)) }));
 
@@ -64,8 +69,8 @@ export function buildLineChartSvg(points, { goalValue, unit, fromDate, toDate })
   return `<svg class="line-chart" viewBox="0 0 ${VIEW_WIDTH} ${VIEW_HEIGHT}" width="100%" role="img" aria-label="${toMonthDay(fromDate)}から${toMonthDay(toDate)}までの推移">
   <line class="chart-axis" x1="${PLOT_LEFT}" y1="${PLOT_TOP}" x2="${PLOT_LEFT}" y2="${PLOT_BOTTOM}" />
   <line class="chart-axis" x1="${PLOT_LEFT}" y1="${PLOT_BOTTOM}" x2="${PLOT_RIGHT}" y2="${PLOT_BOTTOM}" />
-  <text class="chart-label" x="${PLOT_LEFT - 6}" y="${PLOT_TOP + 4}" text-anchor="end">${maxValue}</text>
-  <text class="chart-label" x="${PLOT_LEFT - 6}" y="${PLOT_BOTTOM}" text-anchor="end">0</text>
+  <text class="chart-label" x="${PLOT_LEFT - 6}" y="${PLOT_TOP + 4}" text-anchor="end">${round1(axisTop)}</text>
+  <text class="chart-label" x="${PLOT_LEFT - 6}" y="${PLOT_BOTTOM}" text-anchor="end">${round1(axisBottom)}</text>
   <text class="chart-label" x="${PLOT_LEFT}" y="${VIEW_HEIGHT - 6}" text-anchor="start">${toMonthDay(fromDate)}</text>
   <text class="chart-label" x="${PLOT_RIGHT}" y="${VIEW_HEIGHT - 6}" text-anchor="end">${toMonthDay(toDate)}</text>
   ${goalLine}
