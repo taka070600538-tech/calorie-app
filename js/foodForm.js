@@ -268,9 +268,13 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     if (idInput.value) {
       const existing = foods.find((f) => f.id === idInput.value);
       const updated = { ...existing, name: nameInput.value, per100g };
+      delete updated.mextCode;
+      delete updated.kurumeId;
       if (mextCode) updated.mextCode = mextCode;
       if (kurumeId) updated.kurumeId = kurumeId;
       await updateFood(db, updated);
+      delete existing.mextCode;
+      delete existing.kurumeId;
       Object.assign(existing, updated);
     } else {
       const newFood = { name: nameInput.value, per100g, category: '未分類', source: 'custom' };
