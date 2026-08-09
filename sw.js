@@ -1,15 +1,17 @@
-const CACHE_NAME = 'calorie-app-v3';
+const CACHE_NAME = 'calorie-app-v4';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './manifest.json',
   './data/mext-foods.json',
+  './data/kurume-dishes.json',
   './js/app.js',
   './js/db.js',
   './js/nutrition.js',
   './js/foodSearch.js',
   './js/mextTable.js',
+  './js/dishTable.js',
   './js/render.js',
   './js/mealForm.js',
   './js/foodForm.js',
