@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calorie-app-v4';
+const CACHE_NAME = 'calorie-app-v5';
 const ASSETS = [
   './',
   './index.html',
@@ -16,6 +16,10 @@ const ASSETS = [
   './js/mealForm.js',
   './js/foodForm.js',
   './js/settings.js',
+  './js/dateUtils.js',
+  './js/analytics.js',
+  './js/lineChart.js',
+  './js/analyticsView.js',
 ];
 
 self.addEventListener('install', (event) => {
