@@ -342,13 +342,13 @@ body {
   font-size: 0.9rem;
 }
 
-.mext-help {
+.search-help {
   margin: 0 0 var(--spacing-sm) 0;
   font-size: 0.85rem;
   color: var(--color-text-muted);
 }
 
-.mext-query {
+.search-query {
   width: 100%;
   padding: var(--spacing-sm);
   border: 1px solid var(--color-border);
@@ -356,7 +356,7 @@ body {
   font-size: 1rem;
 }
 
-.mext-results {
+.search-results {
   list-style: none;
   margin: var(--spacing-xs) 0 var(--spacing-md) 0;
   padding: 0;
@@ -364,12 +364,12 @@ body {
   overflow-y: auto;
 }
 
-.mext-results:not(:empty) {
+.search-results:not(:empty) {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
 
-.mext-results li {
+.search-results li {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -378,16 +378,16 @@ body {
   cursor: pointer;
 }
 
-.mext-results li:last-child {
+.search-results li:last-child {
   border-bottom: none;
 }
 
-.mext-result-meta {
+.search-result-meta {
   font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
-.mext-message {
+.search-message {
   cursor: default;
   color: var(--color-text-muted);
   font-size: 0.85rem;
