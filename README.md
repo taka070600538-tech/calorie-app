@@ -44,6 +44,19 @@ gitで追跡していない)。改訂版を取り込む場合は、`tools/build_
 実行すると `data/mext-foods.json` と `docs/成分表/*.md` が再生成され、
 品目数・kcalが0の件数・糖質のクランプ件数が表示される。想定から外れると警告が出る。
 
+### 料理データを更新する
+
+食品一覧には、文科省の成分表(生の食材)に加えて、久留米市が公開する「料理の栄養価一覧」(完成した料理286品目)も取り込んでいる。更新する場合は、以下を実行する。
+
+```bash
+python tools/build_dish_database.py
+```
+
+`tools/cache/kurume_dishes.csv` が無ければ自動でダウンロードする(このディレクトリはgitで追跡していない)。実行すると `data/kurume-dishes.json` と `docs/料理/*.md` が再生成される。
+
+出典: 久留米市「料理の栄養価一覧」(久留米市保健所健康推進課、クリエイティブ・コモンズ表示 CC BY)
+https://data.bodik.jp/dataset/402036_0009100_00005
+
 ## テスト
 
 ```bash
@@ -52,4 +65,8 @@ node --test tests/*.test.js
 
 ```bash
 cd tools && python -m unittest test_build_food_database
+```
+
+```bash
+cd tools && python -m unittest test_build_dish_database
 ```
