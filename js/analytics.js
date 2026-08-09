@@ -33,7 +33,7 @@ export function calcPeriodStats(dailyTotals, expenditureKcal) {
 
   const totals = sumNutrients(dailyTotals);
   const totalIntakeKcal = totals.kcal;
-  const totalExpenditureKcal = expenditureKcal * dayCount;
+  const totalExpenditureKcal = Math.round(expenditureKcal * dayCount);
   const energyBalanceKcal = Math.round(totalIntakeKcal - totalExpenditureKcal);
 
   return {

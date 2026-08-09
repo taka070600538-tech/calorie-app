@@ -102,3 +102,13 @@ test('calcPeriodStats: 平均は栄養素ごとに小数1桁へ丸める', () =>
   assert.equal(stats.averages.protein, 71);
   assert.equal(stats.averages.salt, 8);
 });
+
+test('calcPeriodStats: 非整数の消費カロリーでも消費合計は整数になる', () => {
+  const dailyTotals = [
+    { date: '2026-08-01', kcal: 2000, protein: 0, fat: 0, carb: 0, salt: 0 },
+    { date: '2026-08-02', kcal: 2000, protein: 0, fat: 0, carb: 0, salt: 0 },
+  ];
+  const stats = calcPeriodStats(dailyTotals, 2000.5);
+  assert.equal(stats.totalExpenditureKcal, 4001);
+  assert.equal(Number.isInteger(stats.totalExpenditureKcal), true);
+});
