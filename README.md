@@ -17,6 +17,22 @@ python -m http.server 8800
 返している。devtoolsの Application → Service Workers から Unregister するか、
 違うポート番号で開き直す。
 
+## スマホにインストールする
+
+GitHub Pagesで公開している。
+
+- 公開URL: https://taka070600538-tech.github.io/calorie-app/
+
+AndroidのChromeで公開URLを開き、メニュー(⋮)→「ホーム画面に追加」→「インストール」で
+アプリとしてインストールできる。データは端末のIndexedDBにのみ保存され、外部には送信されない。
+
+### 変更を公開に反映する
+
+`master` にコミットして `git push` すると、1〜2分でGitHub Pagesに反映される。
+JS・CSS・データファイルを変更したときは `sw.js` の `CACHE_NAME` を上げること
+(cache-firstのため、上げないとインストール済みアプリが古いキャッシュを使い続ける)。
+インストール済みアプリは、開き直すと新しいService Workerを取得して更新される。
+
 ## 食品データベースについて
 
 食品一覧は白紙の状態から始まり、「食品」画面で日本食品標準成分表を検索して
