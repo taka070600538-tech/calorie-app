@@ -3,6 +3,7 @@ import { groupMealsByDate, calcPeriodStats } from './analytics.js';
 import { formatDate, calcPresetRange } from './dateUtils.js';
 import { calcProgress } from './nutrition.js';
 import { escapeHtml } from './render.js';
+import { buildLineChartSvg } from './lineChart.js';
 
 export const METRICS = [
   { key: 'kcal', label: 'カロリー', unit: 'kcal' },
@@ -64,6 +65,59 @@ function renderSummary(stats, goals, from, to) {
   `;
 }
 
+function renderChartSection(state, goals) {
+  const metric = METRICS.find((m) => m.key === state.metric);
+  const points = state.dailyTotals.map((day) => ({ date: day.date, value: day[metric.key] }));
+  const svg = buildLineChartSvg(points, {
+    goalValue: goals[metric.key],
+    unit: metric.unit,
+    fromDate: state.from,
+    toDate: state.to,
+  });
+  return `<div class="analytics-chart">${svg}</div>`;
+}
+
+function renderTabs(currentMetric) {
+  return `
+    <div class="analytics-tabs">
+      ${METRICS.map((m) => `
+        <button type="button" class="analytics-tab-btn${m.key === currentMetric ? ' is-active' : ''}" data-metric="${m.key}">${m.label}</button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderTable(dailyTotals, expenditureKcal) {
+  // groupMealsByDate は日付昇順で返すので、表示は新しい順へ反転する。
+  const rows = [...dailyTotals].reverse().map((day) => {
+    const balance = day.kcal - expenditureKcal;
+    return `
+      <tr>
+        <td>${escapeHtml(day.date)}</td>
+        <td>${day.kcal.toLocaleString('ja-JP')}</td>
+        <td>${day.protein}</td>
+        <td>${day.fat}</td>
+        <td>${day.carb}</td>
+        <td>${day.salt}</td>
+        <td class="${signClass(balance)}">${formatSignedInt(balance)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  return `
+    <div class="analytics-table-wrap">
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>日付</th><th>kcal</th><th>タンパク質</th><th>脂質</th><th>糖質</th><th>塩分</th><th>収支</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
 export function renderAnalyticsView(container, db, goals) {
   const today = formatDate(new Date());
   const initialRange = calcPresetRange(today, 7);
@@ -98,7 +152,12 @@ export function renderAnalyticsView(container, db, goals) {
 
   function renderBody() {
     const stats = calcPeriodStats(state.dailyTotals, goals.expenditureKcal);
-    body.innerHTML = renderSummary(stats, goals, state.from, state.to);
+    body.innerHTML = renderSummary(stats, goals, state.from, state.to)
+      + `<h3 class="analytics-heading">推移</h3>`
+      + renderTabs(state.metric)
+      + renderChartSection(state, goals)
+      + `<h3 class="analytics-heading">日別</h3>`
+      + renderTable(state.dailyTotals, goals.expenditureKcal);
   }
 
   async function load() {
@@ -125,6 +184,14 @@ export function renderAnalyticsView(container, db, goals) {
     }
     renderBody();
   }
+
+  body.addEventListener('click', (event) => {
+    const tabBtn = event.target.closest('.analytics-tab-btn');
+    if (!tabBtn) return;
+    state.metric = tabBtn.dataset.metric;
+    // 期間は変わっていないので取得済みデータから描き直すだけでよい。
+    renderBody();
+  });
 
   container.querySelectorAll('.analytics-preset-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
