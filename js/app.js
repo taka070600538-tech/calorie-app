@@ -4,6 +4,7 @@ import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
+import { formatDate, shiftDate } from './dateUtils.js';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -14,19 +15,6 @@ const state = {
   db: null,
   meals: [],
 };
-
-function formatDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-function shiftDate(dateStr, days) {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return formatDate(d);
-}
 
 async function refreshDashboard() {
   document.getElementById('current-date').textContent = state.date;
