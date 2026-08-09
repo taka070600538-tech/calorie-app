@@ -2,6 +2,7 @@ import { openDB, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } fr
 import { openMealForm } from './mealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
+import { renderAnalyticsView } from './analyticsView.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 import { formatDate, shiftDate } from './dateUtils.js';
@@ -65,6 +66,9 @@ function bindNav() {
       const view = btn.dataset.view;
       if (view === 'foods') {
         openFoodsView();
+      } else if (view === 'analytics') {
+        switchView('analytics');
+        renderAnalyticsView(document.getElementById('view-analytics'), state.db, state.goals);
       } else if (view === 'settings') {
         switchView('settings');
         renderSettingsView(document.getElementById('view-settings'), state.db, state.goals, {
