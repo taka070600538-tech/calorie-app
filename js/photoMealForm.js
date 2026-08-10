@@ -98,6 +98,25 @@ export function openPhotoMealForm({ modalRoot, db, mealType, date, foods, onSave
       if (btn) btn.closest('.photo-item').remove();
     });
 
+    // 量を修正したら栄養値も認識時の推定値から比例換算して追従させる
+    // (既存の手入力フォームで量を変えるとプレビューが再計算されるのと同じ挙動)。
+    // 栄養値を個別に手修正したい場合は、量を確定させた後に直すことになる。
+    modalRoot.querySelector('.photo-item-list').addEventListener('input', (event) => {
+      const amountInput = event.target.closest('.photo-item-field[data-field="amountGrams"]');
+      if (!amountInput) return;
+      const row = amountInput.closest('.photo-item');
+      const original = items[Number(row.dataset.index)];
+      if (!original || !(original.amountGrams > 0)) return;
+      const ratio = Number(amountInput.value) / original.amountGrams;
+      if (!Number.isFinite(ratio) || ratio < 0) return;
+      for (const field of row.querySelectorAll('.photo-item-field')) {
+        const key = field.dataset.field;
+        if (key === 'amountGrams') continue;
+        const decimals = key === 'kcal' ? 1 : 10;
+        field.value = Math.round(original[key] * ratio * decimals) / decimals;
+      }
+    });
+
     modalRoot.querySelector('#photo-cancel').addEventListener('click', closeModal);
     modalRoot.querySelector('#photo-save').addEventListener('click', async () => {
       const rows = [...modalRoot.querySelectorAll('.photo-item')];
