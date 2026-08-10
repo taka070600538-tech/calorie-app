@@ -16,6 +16,16 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       <button type="submit">保存</button>
       <span id="goals-saved-msg" class="hidden">保存しました</span>
     </form>
+    <div class="photo-api-section">
+      <h3 class="settings-heading">写真からの食事記録(AI認識)</h3>
+      <label>Anthropic APIキー
+        <input type="password" id="anthropic-api-key" placeholder="sk-ant-..." autocomplete="off">
+      </label>
+      <button type="button" id="save-api-key">APIキーを保存</button>
+      <button type="button" id="clear-api-key">削除</button>
+      <span id="api-key-saved-msg" class="hidden">保存しました</span>
+      <p class="settings-note">キーは端末内(localStorage)にのみ保存され、GitHubバックアップには含まれません。写真認識時のみAnthropicに画像が送信されます。</p>
+    </div>
   `;
 
   const form = container.querySelector('#goals-form');
@@ -36,6 +46,23 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
     savedMsg.classList.remove('hidden');
     setTimeout(() => savedMsg.classList.add('hidden'), 2000);
     onSaved?.();
+  });
+
+  const apiKeyInput = container.querySelector('#anthropic-api-key');
+  const apiKeySavedMsg = container.querySelector('#api-key-saved-msg');
+  apiKeyInput.value = localStorage.getItem('anthropic-api-key') || '';
+
+  container.querySelector('#save-api-key').addEventListener('click', () => {
+    const key = apiKeyInput.value.trim();
+    if (!key) return;
+    localStorage.setItem('anthropic-api-key', key);
+    apiKeySavedMsg.classList.remove('hidden');
+    setTimeout(() => apiKeySavedMsg.classList.add('hidden'), 2000);
+  });
+
+  container.querySelector('#clear-api-key').addEventListener('click', () => {
+    localStorage.removeItem('anthropic-api-key');
+    apiKeyInput.value = '';
   });
 
   const backupSection = document.createElement('div');
