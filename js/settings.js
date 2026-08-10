@@ -37,4 +37,13 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
     setTimeout(() => savedMsg.classList.add('hidden'), 2000);
     onSaved?.();
   });
+
+  const backupSection = document.createElement('div');
+  backupSection.id = 'backup-section';
+  container.appendChild(backupSection);
+  import('https://taka070600538-tech.github.io/app-sync/v1/sync.js')
+    .then((sync) => sync.renderSyncSettings(backupSection))
+    .catch(() => {
+      backupSection.innerHTML = '<p class="settings-note">バックアップ機能は現在利用できません(オフラインの可能性)。</p>';
+    });
 }

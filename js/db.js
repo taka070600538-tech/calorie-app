@@ -101,6 +101,11 @@ export async function getMealsByDateRange(db, from, to) {
   return promisifyRequest(index.getAll(IDBKeyRange.bound(from, to)));
 }
 
+export async function getAllMeals(db) {
+  const tx = db.transaction('meals', 'readonly');
+  return promisifyRequest(tx.objectStore('meals').getAll());
+}
+
 export async function addMeal(db, meal) {
   const tx = db.transaction('meals', 'readwrite');
   const request = tx.objectStore('meals').add(meal);

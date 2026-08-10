@@ -33,6 +33,18 @@ JS・CSS・データファイルを変更したときは `sw.js` の `CACHE_NAME
 (cache-firstのため、上げないとインストール済みアプリが古いキャッシュを使い続ける)。
 インストール済みアプリは、開き直すと新しいService Workerを取得して更新される。
 
+## バックアップと復元
+
+設定タブでGitHubのPersonal Access Token(fine-grained、対象リポジトリ=app-dataのみ、
+権限=Contents: Read and write)を保存すると、1日1回、アプリを開いたときに
+全データ(食品・食事記録・目標)が非公開リポジトリ `app-data` の
+`calorie-app/backup.json` に自動保存される。過去のバックアップはgitのコミット履歴に残る。
+
+機種変更・復元するときは、新しい端末でアプリを開き、設定タブでトークンを入力して
+「GitHubから復元」を押す。
+
+仕組みは共通基盤 [app-sync](https://github.com/taka070600538-tech/app-sync) を参照。
+
 ## 食品データベースについて
 
 食品一覧は白紙の状態から始まり、「食品」画面で日本食品標準成分表を検索して

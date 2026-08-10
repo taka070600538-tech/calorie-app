@@ -6,6 +6,7 @@ import { renderAnalyticsView } from './analyticsView.js';
 import { sumNutrients } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 import { formatDate, shiftDate } from './dateUtils.js';
+import { collectBackup, restoreBackup } from './backup.js';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -180,6 +181,16 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
+
+  // 共有モジュールは動的import。オフラインやapp-sync障害時は黙ってスキップし、
+  // アプリ本体の起動を妨げない(次回オンライン起動時に再試行される)。
+  import('https://taka070600538-tech.github.io/app-sync/v1/sync.js')
+    .then((sync) => sync.initDailyBackup({
+      appId: 'calorie-app',
+      collect: () => collectBackup(state.db),
+      restore: (data) => restoreBackup(state.db, data),
+    }))
+    .catch(() => {});
 }
 
 init();
