@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calorie-app-v8';
+const CACHE_NAME = 'calorie-app-v9';
 const ASSETS = [
   './',
   './index.html',
@@ -25,6 +25,8 @@ const ASSETS = [
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
   './js/backup.js',
+  './js/photoRecognition.js',
+  './js/photoMealForm.js',
 ];
 
 self.addEventListener('install', (event) => {
