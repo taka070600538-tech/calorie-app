@@ -74,7 +74,10 @@ export function renderMealSection(container, mealType, meals, foodsById) {
   container.innerHTML = `
     <div class="meal-section-header">
       <h2>${label}</h2>
-      <button class="add-meal-btn" data-action="add-meal" data-meal-type="${mealType}">＋ 追加</button>
+      <div class="meal-section-buttons">
+        <button class="photo-meal-btn" data-action="photo-meal" data-meal-type="${mealType}">📷 写真</button>
+        <button class="add-meal-btn" data-action="add-meal" data-meal-type="${mealType}">＋ 追加</button>
+      </div>
     </div>
     <ul class="meal-list">${itemsHtml}</ul>
   `;

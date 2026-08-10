@@ -129,7 +129,13 @@ body {
   margin-bottom: var(--spacing-sm);
 }
 
-.add-meal-btn {
+.meal-section-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.add-meal-btn,
+.photo-meal-btn {
   border: none;
   background: var(--color-primary);
   color: #fff;
@@ -293,6 +299,53 @@ body {
   background: var(--color-primary);
   color: #fff;
   border: none;
+}
+
+.photo-item-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-md) 0;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.photo-item {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.photo-item-head {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.photo-item-name {
+  flex: 1;
+}
+
+.photo-item-remove {
+  border: none;
+  background: none;
+  color: var(--color-danger);
+  font-size: 0.8rem;
+}
+
+.photo-item-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xs);
+  font-size: 0.85rem;
+}
+
+.photo-item-grid input {
+  width: 100%;
+}
+
+.photo-loading {
+  padding: var(--spacing-md) 0;
 }
 
 .food-form,

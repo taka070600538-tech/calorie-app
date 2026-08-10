@@ -1,5 +1,6 @@
 import { openDB, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
+import { openPhotoMealForm } from './photoMealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
 import { renderAnalyticsView } from './analyticsView.js';
@@ -94,6 +95,18 @@ function bindMealActions() {
         foods: state.foods,
         onSaved: refreshDashboard,
         onRegisterNew: (name) => openFoodsView(name),
+      });
+      return;
+    }
+    const photoBtn = event.target.closest('[data-action="photo-meal"]');
+    if (photoBtn) {
+      openPhotoMealForm({
+        modalRoot: document.getElementById('modal-root'),
+        db: state.db,
+        mealType: photoBtn.dataset.mealType,
+        date: state.date,
+        foods: state.foods,
+        onSaved: refreshDashboard,
       });
       return;
     }
