@@ -16,6 +16,7 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       <button type="submit">保存</button>
       <span id="goals-saved-msg" class="hidden">保存しました</span>
     </form>
+    <div id="backup-section"></div>
     <div class="photo-api-section">
       <h3 class="settings-heading">写真からの食事記録(AI認識)</h3>
       <label>Anthropic APIキー
@@ -26,6 +27,7 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       <span id="api-key-saved-msg" class="hidden">保存しました</span>
       <p class="settings-note">キーは端末内(localStorage)にのみ保存され、GitHubバックアップには含まれません。写真認識時のみAnthropicに画像が送信されます。</p>
     </div>
+    <div id="token-section"></div>
   `;
 
   const form = container.querySelector('#goals-form');
@@ -65,11 +67,13 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
     apiKeyInput.value = '';
   });
 
-  const backupSection = document.createElement('div');
-  backupSection.id = 'backup-section';
-  container.appendChild(backupSection);
+  const backupSection = container.querySelector('#backup-section');
+  const tokenSection = container.querySelector('#token-section');
   import('https://taka070600538-tech.github.io/app-sync/v1/sync.js')
-    .then((sync) => sync.renderSyncSettings(backupSection))
+    .then((sync) => {
+      sync.renderBackupControls(backupSection);
+      sync.renderTokenSettings(tokenSection);
+    })
     .catch(() => {
       backupSection.innerHTML = '<p class="settings-note">バックアップ機能は現在利用できません(オフラインの可能性)。</p>';
     });
