@@ -61,7 +61,7 @@ function renderSummary(stats, goals, from, to) {
       <div><dt>収支</dt><dd class="${signClass(stats.energyBalanceKcal)}">${formatSignedInt(stats.energyBalanceKcal)} kcal</dd></div>
       <div><dt>体脂肪換算</dt><dd class="${signClass(stats.bodyFatKg)}">${formatSignedKg(stats.bodyFatKg)} kg</dd></div>
     </dl>
-    <p class="analytics-note">消費カロリー ${goals.expenditureKcal.toLocaleString('ja-JP')} kcal/日 として計算</p>
+    <p class="analytics-note">消費カロリー ${(goals.basalKcal + goals.exerciseKcal).toLocaleString('ja-JP')} kcal/日(基礎代謝 ${goals.basalKcal.toLocaleString('ja-JP')} + 運動 ${goals.exerciseKcal.toLocaleString('ja-JP')})として計算</p>
   `;
 }
 
@@ -151,13 +151,13 @@ export function renderAnalyticsView(container, db, goals) {
   }
 
   function renderBody() {
-    const stats = calcPeriodStats(state.dailyTotals, goals.expenditureKcal);
+    const stats = calcPeriodStats(state.dailyTotals, goals.basalKcal + goals.exerciseKcal);
     body.innerHTML = renderSummary(stats, goals, state.from, state.to)
       + `<h3 class="analytics-heading">推移</h3>`
       + renderTabs(state.metric)
       + renderChartSection(state, goals)
       + `<h3 class="analytics-heading">日別</h3>`
-      + renderTable(state.dailyTotals, goals.expenditureKcal);
+      + renderTable(state.dailyTotals, goals.basalKcal + goals.exerciseKcal);
   }
 
   async function load() {

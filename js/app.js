@@ -3,6 +3,7 @@ import { openMealForm } from './mealForm.js';
 import { openPhotoMealForm } from './photoMealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
+import { renderGoalsView } from './goalsView.js';
 import { renderAnalyticsView } from './analyticsView.js';
 import { sumNutrients, sumExtras } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
@@ -74,6 +75,11 @@ function bindNav() {
       } else if (view === 'settings') {
         switchView('settings');
         renderSettingsView(document.getElementById('view-settings'), state.db, state.goals, {
+          onSaved: refreshDashboard,
+        });
+      } else if (view === 'goals') {
+        switchView('goals');
+        renderGoalsView(document.getElementById('view-goals'), state.db, state.goals, {
           onSaved: refreshDashboard,
         });
       } else {

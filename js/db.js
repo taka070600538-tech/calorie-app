@@ -133,13 +133,23 @@ export async function deleteMeal(db, id) {
   });
 }
 
-const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0, expenditureKcal: 2000 };
+const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0, basalKcal: 2000, exerciseKcal: 0 };
+
+// 旧フィールド expenditureKcal(消費カロリー一本値)を basalKcal(基礎代謝)へ引き継ぐ。
+export function normalizeGoals(stored) {
+  const record = { ...(stored || {}) };
+  if (record.basalKcal == null && record.expenditureKcal != null) {
+    record.basalKcal = record.expenditureKcal;
+  }
+  delete record.expenditureKcal;
+  return { ...DEFAULT_GOALS, ...record };
+}
 
 export async function getGoals(db) {
   const tx = db.transaction('goals', 'readonly');
   const result = await promisifyRequest(tx.objectStore('goals').get('default'));
   // 既存レコードに新しいフィールドが無い場合も既定値で埋める。
-  return { ...DEFAULT_GOALS, ...(result || {}) };
+  return normalizeGoals(result);
 }
 
 export async function saveGoals(db, goals) {

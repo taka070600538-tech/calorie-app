@@ -1,21 +1,8 @@
-import { saveGoals } from './db.js';
+import { collectBackup, restoreBackup } from './backup.js';
 
 export function renderSettingsView(container, db, goals, { onSaved } = {}) {
   container.innerHTML = `
     <h2>設定</h2>
-    <form id="goals-form" class="goals-form">
-      <h3 class="settings-heading">栄養目標</h3>
-      <label>カロリー(kcal) <input type="number" id="goal-kcal" value="${goals.kcal}" min="0" step="1"></label>
-      <label>タンパク質(g) <input type="number" id="goal-protein" value="${goals.protein}" min="0" step="0.1"></label>
-      <label>脂質(g) <input type="number" id="goal-fat" value="${goals.fat}" min="0" step="0.1"></label>
-      <label>糖質(g) <input type="number" id="goal-carb" value="${goals.carb}" min="0" step="0.1"></label>
-      <label>塩分(g) <input type="number" id="goal-salt" value="${goals.salt}" min="0" step="0.1"></label>
-      <h3 class="settings-heading">消費カロリー</h3>
-      <label>1日の消費カロリー(kcal) <input type="number" id="goal-expenditure" value="${goals.expenditureKcal}" min="0" step="1"></label>
-      <p class="settings-note">分析タブのカロリー収支と体脂肪換算の計算に使います。</p>
-      <button type="submit">保存</button>
-      <span id="goals-saved-msg" class="hidden">保存しました</span>
-    </form>
     <div id="backup-section"></div>
     <div class="photo-api-section">
       <h3 class="settings-heading">写真からの食事記録(AI認識)</h3>
@@ -28,26 +15,60 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       <p class="settings-note">キーは端末内(localStorage)にのみ保存され、GitHubバックアップには含まれません。写真認識時のみAnthropicに画像が送信されます。</p>
     </div>
     <div id="token-section"></div>
+    <div class="import-export-section">
+      <h3 class="settings-heading">インポート・エクスポート</h3>
+      <div class="import-export-buttons">
+        <button type="button" id="export-data">エクスポート(JSON保存)</button>
+        <button type="button" id="import-data">インポート(JSON読込)</button>
+      </div>
+      <input type="file" id="import-file" accept=".json,application/json" class="hidden">
+      <p class="settings-note">エクスポートは全データ(食品・食事記録・目標)をJSONファイルとして保存します。インポートは現在のデータをファイルの内容で置き換えます。</p>
+    </div>
   `;
 
-  const form = container.querySelector('#goals-form');
-  const savedMsg = container.querySelector('#goals-saved-msg');
+  const exportBtn = container.querySelector('#export-data');
+  const importBtn = container.querySelector('#import-data');
+  const importFile = container.querySelector('#import-file');
 
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const newGoals = {
-      kcal: Number(container.querySelector('#goal-kcal').value),
-      protein: Number(container.querySelector('#goal-protein').value),
-      fat: Number(container.querySelector('#goal-fat').value),
-      carb: Number(container.querySelector('#goal-carb').value),
-      salt: Number(container.querySelector('#goal-salt').value),
-      expenditureKcal: Number(container.querySelector('#goal-expenditure').value),
-    };
-    await saveGoals(db, newGoals);
-    Object.assign(goals, newGoals);
-    savedMsg.classList.remove('hidden');
-    setTimeout(() => savedMsg.classList.add('hidden'), 2000);
-    onSaved?.();
+  exportBtn.addEventListener('click', async () => {
+    try {
+      const data = await collectBackup(db);
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const today = new Date().toISOString().slice(0, 10);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calorie-app-backup-${today}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert('エクスポートに失敗しました: ' + err.message);
+    }
+  });
+
+  importBtn.addEventListener('click', () => {
+    importFile.click();
+  });
+
+  importFile.addEventListener('change', async () => {
+    const file = importFile.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const confirmed = confirm('現在のデータをすべてインポート内容で置き換えます。よろしいですか?');
+      if (!confirmed) return;
+      await restoreBackup(db, data);
+      alert('インポートしました。ページを再読み込みします。');
+      location.reload();
+    } catch (err) {
+      console.error(err);
+      alert('インポートに失敗しました: ' + err.message);
+    } finally {
+      importFile.value = '';
+    }
   });
 
   const apiKeyInput = container.querySelector('#anthropic-api-key');
