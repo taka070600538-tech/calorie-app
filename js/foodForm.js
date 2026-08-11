@@ -26,6 +26,13 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
       <label>脂質(g/100g) <input type="number" id="food-fat" step="0.1" min="0" required></label>
       <label>糖質(g/100g) <input type="number" id="food-carb" step="0.1" min="0" required></label>
       <label>塩分(g/100g) <input type="number" id="food-salt" step="0.1" min="0" required></label>
+      <fieldset class="extra-nutrients">
+        <legend>固有栄養素(任意)</legend>
+        <p class="search-help">DHA、EPA、ポリフェノールなど、食品固有の栄養素を100gあたりの量で登録できます。</p>
+        <div id="extra-rows"></div>
+        <button type="button" id="extra-add">＋ 栄養素を追加</button>
+        <datalist id="extra-name-suggestions"></datalist>
+      </fieldset>
       <div class="food-form-actions">
         <button type="submit">保存</button>
         <button type="button" id="food-form-reset">クリア</button>
@@ -58,11 +65,79 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
   let dishTable = null;
   let dishLoadFailed = false;
 
+  const extraRows = container.querySelector('#extra-rows');
+  const extraAddBtn = container.querySelector('#extra-add');
+  const extraSuggestions = container.querySelector('#extra-name-suggestions');
+
+  // 登録済み食品の固有栄養素から「名前→単位」の対応を集める(サジェストと単位自動追従に使う)
+  function collectKnownExtras() {
+    const known = new Map();
+    for (const food of foods) {
+      for (const extra of food.extraNutrients ?? []) {
+        if (!known.has(extra.name)) known.set(extra.name, extra.unit);
+      }
+    }
+    return known;
+  }
+
+  function renderExtraSuggestions() {
+    const known = collectKnownExtras();
+    extraSuggestions.innerHTML = [...known.keys()]
+      .map((name) => `<option value="${escapeHtml(name)}"></option>`)
+      .join('');
+  }
+
+  function addExtraRow({ name = '', unit = 'mg', per100g = '' } = {}) {
+    const row = document.createElement('div');
+    row.className = 'extra-row';
+    row.innerHTML = `
+      <input type="text" class="extra-name" list="extra-name-suggestions" placeholder="栄養素名(例: DHA)" value="${escapeHtml(name)}">
+      <select class="extra-unit">
+        <option value="mg">mg</option>
+        <option value="g">g</option>
+        <option value="µg">µg</option>
+      </select>
+      <input type="number" class="extra-amount" min="0" step="0.1" placeholder="量/100g" value="${escapeHtml(per100g)}">
+      <button type="button" class="extra-remove" aria-label="この栄養素を削除">✕</button>
+    `;
+    row.querySelector('.extra-unit').value = unit;
+    // 既出の栄養素名を選んだら、単位をその名前の登録済み単位に揃える
+    row.querySelector('.extra-name').addEventListener('input', (event) => {
+      const knownUnit = collectKnownExtras().get(event.target.value.trim());
+      if (knownUnit) row.querySelector('.extra-unit').value = knownUnit;
+    });
+    row.querySelector('.extra-remove').addEventListener('click', () => row.remove());
+    extraRows.appendChild(row);
+  }
+
+  // 名前と量が両方入っている行だけを拾う。0件なら undefined(フィールド自体を付けない)
+  function readExtraRows() {
+    const result = [];
+    for (const row of extraRows.querySelectorAll('.extra-row')) {
+      const name = row.querySelector('.extra-name').value.trim();
+      const amountRaw = row.querySelector('.extra-amount').value;
+      if (name === '' || amountRaw === '') continue;
+      result.push({
+        name,
+        unit: row.querySelector('.extra-unit').value,
+        per100g: Number(amountRaw),
+      });
+    }
+    return result.length > 0 ? result : undefined;
+  }
+
+  function clearExtraRows() {
+    extraRows.innerHTML = '';
+  }
+
+  extraAddBtn.addEventListener('click', () => addExtraRow());
+
   function resetForm() {
     form.reset();
     idInput.value = '';
     mextCodeInput.value = '';
     kurumeIdInput.value = '';
+    clearExtraRows();
   }
 
   function fillForm(food) {
@@ -75,6 +150,10 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     fatInput.value = food.per100g.fat;
     carbInput.value = food.per100g.carb;
     saltInput.value = food.per100g.salt;
+    clearExtraRows();
+    for (const extra of food.extraNutrients ?? []) {
+      addExtraRow(extra);
+    }
     nameInput.focus();
   }
 
@@ -87,6 +166,7 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     fatInput.value = mextFood.per100g.fat;
     carbInput.value = mextFood.per100g.carb;
     saltInput.value = mextFood.per100g.salt;
+    clearExtraRows();
     // 正式名称は長いので、すぐ短い名前に打ち替えられるよう全選択しておく。
     nameInput.focus();
     nameInput.select();
@@ -101,6 +181,7 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     fatInput.value = dish.per100g.fat;
     carbInput.value = dish.per100g.carb;
     saltInput.value = dish.per100g.salt;
+    clearExtraRows();
     nameInput.focus();
     nameInput.select();
   }
@@ -265,26 +346,32 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     };
     const mextCode = mextCodeInput.value || undefined;
     const kurumeId = kurumeIdInput.value || undefined;
+    const extraNutrients = readExtraRows();
     if (idInput.value) {
       const existing = foods.find((f) => f.id === idInput.value);
       const updated = { ...existing, name: nameInput.value, per100g };
       delete updated.mextCode;
       delete updated.kurumeId;
+      delete updated.extraNutrients;
       if (mextCode) updated.mextCode = mextCode;
       if (kurumeId) updated.kurumeId = kurumeId;
+      if (extraNutrients) updated.extraNutrients = extraNutrients;
       await updateFood(db, updated);
       delete existing.mextCode;
       delete existing.kurumeId;
+      delete existing.extraNutrients;
       Object.assign(existing, updated);
     } else {
       const newFood = { name: nameInput.value, per100g, category: '未分類', source: 'custom' };
       if (mextCode) newFood.mextCode = mextCode;
       if (kurumeId) newFood.kurumeId = kurumeId;
+      if (extraNutrients) newFood.extraNutrients = extraNutrients;
       const id = await addFood(db, newFood);
       foods.push({ ...newFood, id });
     }
     resetForm();
     renderList();
+    renderExtraSuggestions();
     onChange?.();
   });
 
@@ -297,5 +384,6 @@ export function renderFoodsView(container, db, foods, { prefillName = '', onChan
     nameInput.focus();
   }
 
+  renderExtraSuggestions();
   renderList();
 }
