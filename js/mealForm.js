@@ -1,5 +1,5 @@
 import { searchFoods } from './foodSearch.js';
-import { calcNutrientsForAmount } from './nutrition.js';
+import { calcNutrientsForAmount, calcExtrasForAmount } from './nutrition.js';
 import { addMeal, updateMeal } from './db.js';
 import { escapeHtml, MEAL_TYPE_LABELS } from './render.js';
 
@@ -61,7 +61,9 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
       return;
     }
     const nutrients = calcNutrientsForAmount(selectedFood.per100g, amount);
-    previewBox.textContent = `${nutrients.kcal}kcal / タンパク質${nutrients.protein}g 脂質${nutrients.fat}g 糖質${nutrients.carb}g 塩分${nutrients.salt}g`;
+    const extras = calcExtrasForAmount(selectedFood.extraNutrients, amount);
+    const extrasText = extras.map((e) => ` ${e.name}${e.amount}${e.unit}`).join('');
+    previewBox.textContent = `${nutrients.kcal}kcal / タンパク質${nutrients.protein}g 脂質${nutrients.fat}g 糖質${nutrients.carb}g 塩分${nutrients.salt}g${extrasText}`;
     saveBtn.disabled = false;
   }
 
@@ -173,21 +175,27 @@ export function openMealForm({ modalRoot, db, mealType, date, foods, onSaved, on
     saveBtn.disabled = true;
     const amount = Number(amountInput.value);
     const nutrients = calcNutrientsForAmount(selectedFood.per100g, amount);
+    const extras = calcExtrasForAmount(selectedFood.extraNutrients, amount);
     if (isEdit) {
-      await updateMeal(db, {
+      const updated = {
         ...existingMeal,
         foodId: selectedFood.id,
         amountGrams: amount,
         ...nutrients,
-      });
+      };
+      delete updated.extras;
+      if (extras.length > 0) updated.extras = extras;
+      await updateMeal(db, updated);
     } else {
-      await addMeal(db, {
+      const meal = {
         date,
         mealType,
         foodId: selectedFood.id,
         amountGrams: amount,
         ...nutrients,
-      });
+      };
+      if (extras.length > 0) meal.extras = extras;
+      await addMeal(db, meal);
     }
     closeModal();
     onSaved();
