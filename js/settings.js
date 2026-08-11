@@ -3,7 +3,6 @@ import { collectBackup, restoreBackup } from './backup.js';
 export function renderSettingsView(container, db, goals, { onSaved } = {}) {
   container.innerHTML = `
     <h2>設定</h2>
-    <div id="backup-section"></div>
     <div class="photo-api-section">
       <h3 class="settings-heading">写真からの食事記録(AI認識)</h3>
       <label>Anthropic APIキー
@@ -14,15 +13,16 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       <span id="api-key-saved-msg" class="hidden">保存しました</span>
       <p class="settings-note">キーは端末内(localStorage)にのみ保存され、GitHubバックアップには含まれません。写真認識時のみAnthropicに画像が送信されます。</p>
     </div>
+    <div id="backup-section"></div>
     <div id="token-section"></div>
     <div class="import-export-section">
       <h3 class="settings-heading">インポート・エクスポート</h3>
+      <p class="settings-note">アプリのデータをJSONファイルに書き出したり、ファイルから取り込んだりできます。</p>
       <div class="import-export-buttons">
-        <button type="button" id="export-data">エクスポート(JSON保存)</button>
-        <button type="button" id="import-data">インポート(JSON読込)</button>
+        <button type="button" id="export-data">ファイルにエクスポート</button>
+        <button type="button" id="import-data">ファイルからインポート</button>
       </div>
       <input type="file" id="import-file" accept=".json,application/json" class="hidden">
-      <p class="settings-note">エクスポートは全データ(食品・食事記録・目標)をJSONファイルとして保存します。インポートは現在のデータをファイルの内容で置き換えます。</p>
     </div>
   `;
 
@@ -96,6 +96,8 @@ export function renderSettingsView(container, db, goals, { onSaved } = {}) {
       sync.renderTokenSettings(tokenSection);
     })
     .catch(() => {
-      backupSection.innerHTML = '<p class="settings-note">バックアップ機能は現在利用できません(オフラインの可能性)。</p>';
+      const message = '<p class="settings-note">GitHubバックアップ機能は現在利用できません(オフラインの可能性)。</p>';
+      backupSection.innerHTML = message;
+      tokenSection.innerHTML = message;
     });
 }
