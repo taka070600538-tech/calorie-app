@@ -103,6 +103,11 @@ body {
   margin-bottom: var(--spacing-xs);
 }
 
+.goal-row-extra .goal-row-label {
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
 .progress-bar {
   height: 8px;
   background: var(--color-border);

@@ -4,7 +4,7 @@ import { openPhotoMealForm } from './photoMealForm.js';
 import { renderFoodsView } from './foodForm.js';
 import { renderSettingsView } from './settings.js';
 import { renderAnalyticsView } from './analyticsView.js';
-import { sumNutrients } from './nutrition.js';
+import { sumNutrients, sumExtras } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 import { formatDate, shiftDate } from './dateUtils.js';
 import { collectBackup, restoreBackup } from './backup.js';
@@ -26,7 +26,7 @@ async function refreshDashboard() {
   const foodsById = Object.fromEntries(state.foods.map((f) => [f.id, f]));
   const totals = sumNutrients(meals);
 
-  renderGoalSummary(document.getElementById('goal-summary'), totals, state.goals);
+  renderGoalSummary(document.getElementById('goal-summary'), totals, state.goals, sumExtras(meals));
 
   for (const mealType of MEAL_TYPES) {
     const mealsOfType = meals.filter((m) => m.mealType === mealType);

@@ -6,7 +6,7 @@ export function escapeHtml(str) {
   }[c]));
 }
 
-export function renderGoalSummary(container, totals, goals) {
+export function renderGoalSummary(container, totals, goals, extras = []) {
   const rows = [
     { label: 'カロリー', unit: 'kcal', current: totals.kcal, goal: goals.kcal },
     { label: 'タンパク質', unit: 'g', current: totals.protein, goal: goals.protein },
@@ -15,7 +15,7 @@ export function renderGoalSummary(container, totals, goals) {
     { label: '塩分', unit: 'g', current: totals.salt, goal: goals.salt },
   ];
 
-  container.innerHTML = rows
+  const goalRowsHtml = rows
     .map((row) => {
       const progress = calcProgress(row.current, row.goal);
       const width = Math.min(progress, 100);
@@ -32,6 +32,22 @@ export function renderGoalSummary(container, totals, goals) {
       `;
     })
     .join('');
+
+  // 固有栄養素は目標値を持たないため、進捗バーなしの1行で塩分の下に並べる
+  const extraRowsHtml = extras
+    .map(
+      (extra) => `
+        <div class="goal-row goal-row-extra">
+          <div class="goal-row-label">
+            <span>${escapeHtml(extra.name)}</span>
+            <span>${extra.amount}${escapeHtml(extra.unit)}</span>
+          </div>
+        </div>
+      `
+    )
+    .join('');
+
+  container.innerHTML = goalRowsHtml + extraRowsHtml;
 }
 
 export const MEAL_TYPE_LABELS = {
