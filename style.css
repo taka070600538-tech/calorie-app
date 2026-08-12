@@ -148,6 +148,18 @@ body {
   border-radius: var(--radius-sm);
 }
 
+.meal-section-total {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  padding-bottom: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
 .meal-list { list-style: none; margin: 0; padding: 0; }
 
 .meal-item {

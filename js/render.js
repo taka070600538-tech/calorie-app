@@ -1,4 +1,4 @@
-import { calcProgress } from './nutrition.js';
+import { calcProgress, sumNutrients } from './nutrition.js';
 
 export function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({
@@ -87,6 +87,20 @@ export function renderMealSection(container, mealType, meals, foodsById) {
         })
         .join('');
 
+  const totals = sumNutrients(meals);
+  const totalsHtml = meals.length === 0
+    ? ''
+    : `
+      <div class="meal-section-total">
+        <span>合計</span>
+        <span>${totals.kcal}kcal</span>
+        <span>タンパク質${totals.protein}g</span>
+        <span>脂質${totals.fat}g</span>
+        <span>糖質${totals.carb}g</span>
+        <span>塩分${totals.salt}g</span>
+      </div>
+    `;
+
   container.innerHTML = `
     <div class="meal-section-header">
       <h2>${label}</h2>
@@ -95,6 +109,7 @@ export function renderMealSection(container, mealType, meals, foodsById) {
         <button class="add-meal-btn" data-action="add-meal" data-meal-type="${mealType}">＋ 追加</button>
       </div>
     </div>
+    ${totalsHtml}
     <ul class="meal-list">${itemsHtml}</ul>
   `;
 }
