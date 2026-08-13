@@ -34,20 +34,32 @@ function round1(n) {
 }
 
 // その日のmealsを集計してカロリー記録セクションを組み立てる。
-// 合計行(kcal整数・栄養素は小数1桁) + 食事区分別のkcal行。その日のmealsが無ければnull。
-export function buildDaySection(meals, date) {
+// 合計行(kcal整数・栄養素は小数1桁) + 固有栄養素の日合計行(DHA等、あれば)
+// + 食事区分別のkcalと食事内容(食品名+量)。その日のmealsが無ければnull。
+// foodNamesはfoodId→食品名のMap(食品マスタに無いIDは「不明な食品」と表示)。
+export function buildDaySection(meals, date, foodNames = new Map()) {
   const dayMeals = meals.filter((m) => m.date === date);
   if (dayMeals.length === 0) return null;
 
   const total = { kcal: 0, protein: 0, fat: 0, carb: 0, salt: 0 };
-  const byType = new Map();
+  const byType = new Map(); // mealType → { kcal, items: ['食品名 量g', ...] }
+  const extras = new Map(); // "名前|単位" → { name, unit, amount }
   for (const m of dayMeals) {
     total.kcal += m.kcal ?? 0;
     total.protein += m.protein ?? 0;
     total.fat += m.fat ?? 0;
     total.carb += m.carb ?? 0;
     total.salt += m.salt ?? 0;
-    byType.set(m.mealType, (byType.get(m.mealType) ?? 0) + (m.kcal ?? 0));
+    if (!byType.has(m.mealType)) byType.set(m.mealType, { kcal: 0, items: [] });
+    const entry = byType.get(m.mealType);
+    entry.kcal += m.kcal ?? 0;
+    const name = foodNames.get(m.foodId) ?? '不明な食品';
+    entry.items.push(m.amountGrams != null ? `${name} ${round1(m.amountGrams)}g` : name);
+    for (const ex of m.extras ?? []) {
+      const key = `${ex.name}|${ex.unit}`;
+      if (!extras.has(key)) extras.set(key, { name: ex.name, unit: ex.unit, amount: 0 });
+      extras.get(key).amount += ex.amount ?? 0;
+    }
   }
 
   const totalLine =
@@ -55,15 +67,23 @@ export function buildDaySection(meals, date) {
     `(たんぱく質${round1(total.protein)}g / 脂質${round1(total.fat)}g / ` +
     `炭水化物${round1(total.carb)}g / 塩分${round1(total.salt)}g)`;
 
+  // DHA・EPAなど、食品に登録された固有栄養素の日合計(登場順)。
+  const extraLine = extras.size > 0
+    ? `- 固有栄養素: ${[...extras.values()]
+        .map((e) => `${e.name} ${round1(e.amount)}${e.unit}`)
+        .join(' / ')}`
+    : null;
+
   // 既知の並び順(朝食→昼食→夕食→間食)を優先し、未知のmealTypeは登場順で末尾に追加する。
   const knownTypes = MEAL_TYPE_ORDER.filter((t) => byType.has(t));
   const unknownTypes = [...byType.keys()].filter((t) => !MEAL_TYPE_ORDER.includes(t));
   const mealLines = [...knownTypes, ...unknownTypes].map((t) => {
     const label = MEAL_TYPE_LABELS[t] ?? t;
-    return `- ${label}: ${Math.round(byType.get(t))}kcal`;
+    const { kcal, items } = byType.get(t);
+    return `- ${label}: ${Math.round(kcal)}kcal — ${items.join('、')}`;
   });
 
-  return ['## カロリー記録', '', totalLine, ...mealLines].join('\n');
+  return ['## カロリー記録', '', totalLine, ...(extraLine ? [extraLine] : []), ...mealLines].join('\n');
 }
 
 // contentの改行スタイルを保ちながら、マーカー区間を冪等に置換(無ければ末尾に追記)する。
@@ -89,12 +109,17 @@ export function datesToTranscribe(meals, today) {
   return [...dates].filter((d) => DATE_RE.test(d) && d < today).sort();
 }
 
+// foods配列からfoodId→食品名のMapを作る(foodsが無ければ空Map)。
+export function buildFoodNames(foods) {
+  return new Map((Array.isArray(foods) ? foods : []).map((f) => [f.id, f.name]));
+}
+
 // diaryDir配下の各日付ファイルへ、backup.json記載の内容をupsertする。
 // action: 'created'(新規ファイル) / 'updated'(内容変更あり) / 'unchanged'(差分なし) / 'error'
-export function runTranscription({ meals, diaryDir, today }) {
+export function runTranscription({ meals, foodNames = new Map(), diaryDir, today }) {
   const results = [];
   for (const date of datesToTranscribe(meals, today)) {
-    const section = buildDaySection(meals, date);
+    const section = buildDaySection(meals, date, foodNames);
     if (!section) continue;
     const path = join(diaryDir, `${date}.md`);
     try {
@@ -121,9 +146,11 @@ function main() {
     return;
   }
   let meals;
+  let foodNames;
   try {
     const data = JSON.parse(readFileSync(backupPath, 'utf8'));
     meals = Array.isArray(data.meals) ? data.meals : null;
+    foodNames = buildFoodNames(data.foods);
   } catch (err) {
     console.log(`backup.jsonを読めません (${err.message})`);
     return;
@@ -133,7 +160,7 @@ function main() {
     return;
   }
   mkdirSync(diaryDir, { recursive: true });
-  const results = runTranscription({ meals, diaryDir, today: todayString() });
+  const results = runTranscription({ meals, foodNames, diaryDir, today: todayString() });
   for (const r of results) {
     console.log(r.action === 'error' ? `${r.date}: ERROR (${r.message})` : `${r.date}: ${r.action}`);
   }
