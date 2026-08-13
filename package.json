@@ -3,5 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "毎日の食事カロリーを記録・計算するローカル完結PWA"
+  "description": "毎日の食事カロリーを記録・計算するローカル完結PWA",
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  }
 }
