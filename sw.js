@@ -1,4 +1,4 @@
-const CACHE_NAME = 'calorie-app-v13';
+const CACHE_NAME = 'calorie-app-v14';
 const ASSETS = [
   './',
   './index.html',
@@ -18,6 +18,7 @@ const ASSETS = [
   './js/settings.js',
   './js/goalsView.js',
   './js/dateUtils.js',
+  './js/exerciseSync.js',
   './js/analytics.js',
   './js/lineChart.js',
   './js/analyticsView.js',

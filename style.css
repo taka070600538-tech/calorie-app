@@ -373,6 +373,14 @@ body {
   margin-bottom: var(--spacing-md);
 }
 
+.exercise-sync {
+  margin: var(--spacing-sm) 0;
+}
+
+.exercise-sync-result:empty { display: none; }
+
+.exercise-sync-result.is-error { color: var(--color-danger, #c0392b); }
+
 .food-form label,
 .goals-form label {
   display: block;
