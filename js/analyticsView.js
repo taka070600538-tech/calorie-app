@@ -1,9 +1,10 @@
 import { getMealsByDateRange } from './db.js';
-import { groupMealsByDate, calcPeriodStats } from './analytics.js';
+import { groupMealsByDate, calcPeriodStats, dailyBalanceKcal } from './analytics.js';
 import { formatDate, calcPresetRange } from './dateUtils.js';
 import { calcProgress } from './nutrition.js';
-import { escapeHtml } from './render.js';
+import { escapeHtml, formatSignedKcal } from './render.js';
 import { buildLineChartSvg } from './lineChart.js';
+import { loadExerciseKcalByDate, BASAL_KCAL, JOGGING_KCAL_PER_HOUR } from './exerciseSync.js';
 
 export const METRICS = [
   { key: 'kcal', label: 'カロリー', unit: 'kcal' },
@@ -19,12 +20,6 @@ const PRESETS = [
   { days: 90, label: '直近90日' },
 ];
 
-function formatSignedInt(value) {
-  if (value === 0) return '0';
-  const sign = value > 0 ? '+' : '-';
-  return `${sign}${Math.abs(value).toLocaleString('ja-JP')}`;
-}
-
 function formatSignedKg(value) {
   const fixed = value.toFixed(2);
   if (Number(fixed) === 0) return '0.00';
@@ -37,7 +32,7 @@ function signClass(value) {
   return '';
 }
 
-function renderSummary(stats, goals, from, to) {
+function renderSummary(stats, goals, from, to, exerciseAvailable) {
   const rows = METRICS.map((metric) => {
     const average = stats.averages[metric.key];
     const goal = goals[metric.key];
@@ -50,6 +45,10 @@ function renderSummary(stats, goals, from, to) {
     `;
   }).join('');
 
+  const warningHtml = exerciseAvailable === false
+    ? '<p class="analytics-note is-warning">運動管理アプリのデータが見つからないため、運動は0kcalとして計算しています。</p>'
+    : '';
+
   return `
     <p class="analytics-range">${stats.dayCount}日分の記録（${escapeHtml(from)} 〜 ${escapeHtml(to)}）</p>
     <h3 class="analytics-heading">1日あたりの平均</h3>
@@ -57,11 +56,12 @@ function renderSummary(stats, goals, from, to) {
     <h3 class="analytics-heading">カロリー収支</h3>
     <dl class="analytics-balance">
       <div><dt>摂取合計</dt><dd>${stats.totalIntakeKcal.toLocaleString('ja-JP')} kcal</dd></div>
-      <div><dt>消費合計</dt><dd>${stats.totalExpenditureKcal.toLocaleString('ja-JP')} kcal</dd></div>
-      <div><dt>収支</dt><dd class="${signClass(stats.energyBalanceKcal)}">${formatSignedInt(stats.energyBalanceKcal)} kcal</dd></div>
+      <div><dt>消費合計</dt><dd>${stats.totalExpenditureKcal.toLocaleString('ja-JP')} kcal<small>(基礎代謝 ${stats.totalBasalKcal.toLocaleString('ja-JP')} + 運動 ${stats.totalExerciseKcal.toLocaleString('ja-JP')})</small></dd></div>
+      <div><dt>収支</dt><dd class="${signClass(stats.energyBalanceKcal)}">${formatSignedKcal(stats.energyBalanceKcal)} kcal</dd></div>
       <div><dt>体脂肪換算</dt><dd class="${signClass(stats.bodyFatKg)}">${formatSignedKg(stats.bodyFatKg)} kg</dd></div>
     </dl>
-    <p class="analytics-note">消費カロリー ${(goals.basalKcal + goals.exerciseKcal).toLocaleString('ja-JP')} kcal/日(基礎代謝 ${goals.basalKcal.toLocaleString('ja-JP')} + 運動 ${goals.exerciseKcal.toLocaleString('ja-JP')})として計算</p>
+    <p class="analytics-note">消費カロリー = 基礎代謝 ${BASAL_KCAL.toLocaleString('ja-JP')} kcal/日(固定)+ 運動(運動管理アプリのジョギング時間 × ${JOGGING_KCAL_PER_HOUR.toLocaleString('ja-JP')}kcal/時)として計算</p>
+    ${warningHtml}
   `;
 }
 
@@ -87,10 +87,10 @@ function renderTabs(currentMetric) {
   `;
 }
 
-function renderTable(dailyTotals, expenditureKcal) {
+function renderTable(dailyTotals) {
   // groupMealsByDate は日付昇順で返すので、表示は新しい順へ反転する。
   const rows = [...dailyTotals].reverse().map((day) => {
-    const balance = day.kcal - expenditureKcal;
+    const balance = dailyBalanceKcal(day);
     return `
       <tr>
         <td>${escapeHtml(day.date)}</td>
@@ -99,7 +99,8 @@ function renderTable(dailyTotals, expenditureKcal) {
         <td>${day.fat}</td>
         <td>${day.carb}</td>
         <td>${day.salt}</td>
-        <td class="${signClass(balance)}">${formatSignedInt(balance)}</td>
+        <td>${day.exerciseKcal.toLocaleString('ja-JP')}</td>
+        <td class="${signClass(balance)}">${formatSignedKcal(balance)}</td>
       </tr>
     `;
   }).join('');
@@ -109,7 +110,7 @@ function renderTable(dailyTotals, expenditureKcal) {
       <table class="analytics-table">
         <thead>
           <tr>
-            <th>日付</th><th>kcal</th><th>タンパク質</th><th>脂質</th><th>糖質</th><th>塩分</th><th>収支</th>
+            <th>日付</th><th>kcal</th><th>タンパク質</th><th>脂質</th><th>糖質</th><th>塩分</th><th>運動</th><th>収支</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -151,13 +152,13 @@ export function renderAnalyticsView(container, db, goals) {
   }
 
   function renderBody() {
-    const stats = calcPeriodStats(state.dailyTotals, goals.basalKcal + goals.exerciseKcal);
-    body.innerHTML = renderSummary(stats, goals, state.from, state.to)
+    const stats = calcPeriodStats(state.dailyTotals);
+    body.innerHTML = renderSummary(stats, goals, state.from, state.to, state.exerciseAvailable)
       + `<h3 class="analytics-heading">推移</h3>`
       + renderTabs(state.metric)
       + renderChartSection(state, goals)
       + `<h3 class="analytics-heading">日別</h3>`
-      + renderTable(state.dailyTotals, goals.basalKcal + goals.exerciseKcal);
+      + renderTable(state.dailyTotals);
   }
 
   async function load() {
@@ -171,8 +172,12 @@ export function renderAnalyticsView(container, db, goals) {
       return;
     }
     try {
-      const meals = await getMealsByDateRange(db, state.from, state.to);
-      state.dailyTotals = groupMealsByDate(meals);
+      const [meals, exercise] = await Promise.all([
+        getMealsByDateRange(db, state.from, state.to),
+        loadExerciseKcalByDate(),
+      ]);
+      state.dailyTotals = groupMealsByDate(meals, exercise.kcalByDate);
+      state.exerciseAvailable = exercise.available;
     } catch (err) {
       console.error(err);
       showMessage('記録の読み込みに失敗しました。');

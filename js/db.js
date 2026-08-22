@@ -133,15 +133,14 @@ export async function deleteMeal(db, id) {
   });
 }
 
-const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0, basalKcal: 2000, exerciseKcal: 0 };
+const DEFAULT_GOALS = { id: 'default', kcal: 2000, protein: 60, fat: 60, carb: 250, salt: 7.0 };
 
-// 旧フィールド expenditureKcal(消費カロリー一本値)を basalKcal(基礎代謝)へ引き継ぐ。
+// 消費カロリーは基礎代謝固定+運動管理アプリから自動取得に変更したため、旧手入力フィールドは読み捨てる。
 export function normalizeGoals(stored) {
   const record = { ...(stored || {}) };
-  if (record.basalKcal == null && record.expenditureKcal != null) {
-    record.basalKcal = record.expenditureKcal;
-  }
   delete record.expenditureKcal;
+  delete record.basalKcal;
+  delete record.exerciseKcal;
   return { ...DEFAULT_GOALS, ...record };
 }
 

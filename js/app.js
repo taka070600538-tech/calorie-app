@@ -9,6 +9,7 @@ import { sumNutrients, sumExtras } from './nutrition.js';
 import { renderGoalSummary, renderMealSection } from './render.js';
 import { formatDate, shiftDate } from './dateUtils.js';
 import { collectBackup, restoreBackup } from './backup.js';
+import { loadExerciseKcalByDate, exerciseKcalOn, BASAL_KCAL } from './exerciseSync.js';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -27,7 +28,14 @@ async function refreshDashboard() {
   const foodsById = Object.fromEntries(state.foods.map((f) => [f.id, f]));
   const totals = sumNutrients(meals);
 
-  renderGoalSummary(document.getElementById('goal-summary'), totals, state.goals, sumExtras(meals));
+  // 運動管理アプリで記録を変えた直後にも反映されるよう、表示のたびに読み直す。
+  const exercise = await loadExerciseKcalByDate();
+
+  renderGoalSummary(document.getElementById('goal-summary'), totals, state.goals, sumExtras(meals), {
+    basalKcal: BASAL_KCAL,
+    exerciseKcal: exerciseKcalOn(exercise.kcalByDate, state.date),
+    available: exercise.available,
+  });
 
   for (const mealType of MEAL_TYPES) {
     const mealsOfType = meals.filter((m) => m.mealType === mealType);

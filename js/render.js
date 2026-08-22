@@ -6,7 +6,20 @@ export function escapeHtml(str) {
   }[c]));
 }
 
-export function renderGoalSummary(container, totals, goals, extras = []) {
+// 符号付きのkcal表示を作る(0は"0"、正は"+"付き、負は"-"付き、桁区切りあり)。
+export function formatSignedKcal(value) {
+  if (value === 0) return '0';
+  const sign = value > 0 ? '+' : '-';
+  return `${sign}${Math.abs(value).toLocaleString('ja-JP')}`;
+}
+
+function balanceSignClass(value) {
+  if (value > 0) return 'is-surplus';
+  if (value < 0) return 'is-deficit';
+  return '';
+}
+
+export function renderGoalSummary(container, totals, goals, extras = [], expenditure = null) {
   const rows = [
     { label: 'カロリー', unit: 'kcal', current: totals.kcal, goal: goals.kcal },
     { label: 'タンパク質', unit: 'g', current: totals.protein, goal: goals.protein },
@@ -47,7 +60,24 @@ export function renderGoalSummary(container, totals, goals, extras = []) {
     )
     .join('');
 
-  container.innerHTML = goalRowsHtml + extraRowsHtml;
+  let balanceHtml = '';
+  if (expenditure !== null) {
+    const { basalKcal, exerciseKcal, available } = expenditure;
+    const expenditureKcal = basalKcal + exerciseKcal;
+    const balance = totals.kcal - expenditureKcal;
+    const noteHtml = available === false
+      ? '<p class="goal-balance-note">運動管理アプリのデータが見つからないため、運動は0kcalとして計算しています。</p>'
+      : '';
+    balanceHtml = `
+      <div class="goal-balance">
+        <div class="goal-balance-row"><span>消費</span><span>${expenditureKcal.toLocaleString('ja-JP')} kcal(基礎代謝 ${basalKcal.toLocaleString('ja-JP')} + 運動 ${exerciseKcal.toLocaleString('ja-JP')})</span></div>
+        <div class="goal-balance-row"><span>収支</span><span class="${balanceSignClass(balance)}">${formatSignedKcal(balance)} kcal</span></div>
+        ${noteHtml}
+      </div>
+    `;
+  }
+
+  container.innerHTML = goalRowsHtml + extraRowsHtml + balanceHtml;
 }
 
 export const MEAL_TYPE_LABELS = {
