@@ -121,7 +121,7 @@ export function runTranscription({ meals, foodNames = new Map(), diaryDir, today
   for (const date of datesToTranscribe(meals, today)) {
     const section = buildDaySection(meals, date, foodNames);
     if (!section) continue;
-    const path = join(diaryDir, `${date}.md`);
+    const path = join(diaryDir, `スマホ - ${date}.md`);
     try {
       const existing = existsSync(path) ? readFileSync(path, 'utf8') : '';
       const next = upsertSection(existing, section);
