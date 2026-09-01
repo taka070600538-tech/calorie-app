@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 const START = '<!-- calorie-app:start -->';
 const END = '<!-- calorie-app:end -->';
 const DEFAULT_BACKUP = String.raw`D:\Obsidian Vault for Claude Code\Git\app-data\calorie-app\backup.json`;
-const DEFAULT_DIARY_DIR = String.raw`D:\Obsidian Vault for Claude Code\01_油田`;
+const DEFAULT_DIARY_DIR = String.raw`D:\Obsidian Vault for Claude Code\01_原油`;
 
 export function todayString(now = new Date()) {
   const y = now.getFullYear();
