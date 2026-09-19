@@ -21,6 +21,19 @@ test('buildRecognitionRequest: モデル・画像・構造化出力を含むリ�
   assert.equal(schema.additionalProperties, false);
 });
 
+test('buildRecognitionRequest: 応答は1皿1品のみ・量(g)はAIに推定させない', () => {
+  const req = buildRecognitionRequest('BASE64DATA', 'image/jpeg');
+  const schema = req.output_config.format.schema;
+  assert.equal(schema.properties.items.maxItems, 1);
+  const itemProps = schema.properties.items.items.properties;
+  assert.ok(!('amountGrams' in itemProps), '量はAIに推定させない');
+  assert.deepEqual(schema.properties.items.items.required, ['name', 'kcal', 'protein', 'fat', 'carb', 'salt']);
+  const prompt = req.messages[0].content.find((b) => b.type === 'text').text;
+  assert.match(prompt, /中心/);
+  assert.match(prompt, /1品|一品|1つ/);
+  assert.match(prompt, /100g|100グラム/);
+});
+
 test('parseRecognitionResponse: textブロックのJSONからitemsを取り出す', () => {
   const responseJson = {
     stop_reason: 'end_turn',
@@ -41,18 +54,37 @@ test('parseRecognitionResponse: textブロックが無ければ Error を投げ�
   assert.throws(() => parseRecognitionResponse(responseJson));
 });
 
-test('validateItems: 正常な項目はそのまま通す', () => {
-  const items = [{ name: '味噌汁', amountGrams: 180, kcal: 40, protein: 3, fat: 1.2, carb: 4.5, salt: 1.5 }];
+test('validateItems: 正常な項目に仮の量100gを付けて返す', () => {
+  const items = [{ name: '味噌汁', kcal: 22, protein: 1.7, fat: 0.7, carb: 2.5, salt: 0.8 }];
   const result = validateItems(items);
   assert.equal(result.length, 1);
+  assert.equal(result[0].amountGrams, 100);
+  assert.equal(result[0].name, '味噌汁');
+  assert.equal(result[0].kcal, 22);
+});
+
+test('validateItems: AIが量を返してきても100gで上書きする', () => {
+  const items = [{ name: 'カレーライス', amountGrams: 450, kcal: 180, protein: 4, fat: 6, carb: 28, salt: 0.9 }];
+  const result = validateItems(items);
+  assert.equal(result[0].amountGrams, 100);
+});
+
+test('validateItems: 複数返ってきても先頭の1品だけにする', () => {
+  const items = [
+    { name: 'ハンバーグ', kcal: 220, protein: 13, fat: 15, carb: 8, salt: 1.1 },
+    { name: 'にんじん', kcal: 35, protein: 0.7, fat: 0.1, carb: 6, salt: 0 },
+  ];
+  const result = validateItems(items);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].name, 'ハンバーグ');
 });
 
 test('validateItems: name空・数値が負・数値でない項目は除外する', () => {
   const items = [
-    { name: '', amountGrams: 100, kcal: 100, protein: 1, fat: 1, carb: 1, salt: 0 },
-    { name: '謎の料理', amountGrams: -5, kcal: 100, protein: 1, fat: 1, carb: 1, salt: 0 },
-    { name: '謎の料理2', amountGrams: 100, kcal: 'abc', protein: 1, fat: 1, carb: 1, salt: 0 },
-    { name: '正常', amountGrams: 100, kcal: 100, protein: 1, fat: 1, carb: 1, salt: 0.1 },
+    { name: '', kcal: 100, protein: 1, fat: 1, carb: 1, salt: 0 },
+    { name: '謎の料理', kcal: -5, protein: 1, fat: 1, carb: 1, salt: 0 },
+    { name: '謎の料理2', kcal: 'abc', protein: 1, fat: 1, carb: 1, salt: 0 },
+    { name: '正常', kcal: 100, protein: 1, fat: 1, carb: 1, salt: 0.1 },
   ];
   const result = validateItems(items);
   assert.equal(result.length, 1);

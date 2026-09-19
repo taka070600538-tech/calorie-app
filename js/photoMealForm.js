@@ -83,7 +83,7 @@ export function openPhotoMealForm({ modalRoot, db, mealType, date, foods, onSave
       <div class="modal-overlay">
         <div class="modal photo-confirm-modal">
           <h2>${MEAL_TYPE_LABELS[mealType]}を写真から追加</h2>
-          <p class="settings-note">推定値です。必要に応じて修正してください。</p>
+          <p class="settings-note">量は100gの仮置きです。実測した皿の重量に修正すると、栄養値が自動で換算されます。品名・栄養値も必要に応じて修正できます。</p>
           <ul class="photo-item-list">${rowsHtml}</ul>
           <div class="modal-actions">
             <button type="button" id="photo-save">この内容で記録</button>

@@ -1,25 +1,35 @@
-const RECOGNITION_PROMPT = `この写真に写っている料理・食品をすべて特定してください。
-各品目について、日本語のメニュー名、目視で推定した量(グラム)、その量に対する栄養値
+// 1回の撮影で扱うのは中心の皿1つだけ。材料や端に映る食品に分解せず、1つの料理メニューとして返させる。
+// 量(g)は写真からの推定誤差が大きいため AI には推定させず、栄養値は100gあたりで返させて
+// アプリ側で仮の量100gを付ける(ユーザーが実測した皿の重量に修正すると比例換算される)。
+const RECOGNITION_PROMPT = `この写真の中心にある皿(器)1つだけを対象にしてください。
+その皿に盛られた料理を、材料や部品に分解せず、1つの料理メニューとして1品だけ特定してください
+(品名は代表的なメニュー名でよく、多少ずれていても構いません)。
+端に映り込んだ別の皿・付け合わせ・飲み物・調味料などは無視してください。
+その料理の日本語のメニュー名と、100gあたりの栄養値
 (カロリーkcal・タンパク質g・脂質g・糖質g・塩分g)を推定してください。
+量(グラム)は推定しないでください。
 食べ物が写っていない場合は items を空配列にしてください。`;
+
+// アプリ側で付ける仮の量。ユーザーが確認画面で実測値に修正する前提の形式的な値。
+export const PLACEHOLDER_GRAMS = 100;
 
 const RESPONSE_SCHEMA = {
   type: 'object',
   properties: {
     items: {
       type: 'array',
+      maxItems: 1,
       items: {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          amountGrams: { type: 'number' },
           kcal: { type: 'number' },
           protein: { type: 'number' },
           fat: { type: 'number' },
           carb: { type: 'number' },
           salt: { type: 'number' },
         },
-        required: ['name', 'amountGrams', 'kcal', 'protein', 'fat', 'carb', 'salt'],
+        required: ['name', 'kcal', 'protein', 'fat', 'carb', 'salt'],
         additionalProperties: false,
       },
     },
@@ -54,13 +64,25 @@ export function parseRecognitionResponse(responseJson) {
   return JSON.parse(textBlock.text);
 }
 
+// 有効な先頭1品だけを返し、量は常に PLACEHOLDER_GRAMS(100g)で上書きする。
+// 栄養値は100gあたりの推定値なので、そのまま「100gぶんの栄養値」として扱える。
 export function validateItems(items) {
   if (!Array.isArray(items)) return [];
-  const numericKeys = ['amountGrams', 'kcal', 'protein', 'fat', 'carb', 'salt'];
-  return items.filter((item) => {
+  const numericKeys = ['kcal', 'protein', 'fat', 'carb', 'salt'];
+  const first = items.find((item) => {
     if (!item || typeof item.name !== 'string' || item.name.trim() === '') return false;
     return numericKeys.every((key) => typeof item[key] === 'number' && Number.isFinite(item[key]) && item[key] >= 0);
   });
+  if (!first) return [];
+  return [{
+    name: first.name,
+    amountGrams: PLACEHOLDER_GRAMS,
+    kcal: first.kcal,
+    protein: first.protein,
+    fat: first.fat,
+    carb: first.carb,
+    salt: first.salt,
+  }];
 }
 
 export function foodFromItem(item) {
