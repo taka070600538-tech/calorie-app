@@ -24,7 +24,9 @@ test('buildRecognitionRequest: モデル・画像・構造化出力を含むリ�
 test('buildRecognitionRequest: 応答は1皿1品のみ・量(g)はAIに推定させない', () => {
   const req = buildRecognitionRequest('BASE64DATA', 'image/jpeg');
   const schema = req.output_config.format.schema;
-  assert.equal(schema.properties.items.maxItems, 1);
+  // Anthropicの構造化出力は配列の件数制約(maxItems等)に未対応でHTTP 400になる。
+  // 1件に絞るのはアプリ側(validateItems)で行う。
+  assert.ok(!('maxItems' in schema.properties.items), 'maxItemsはAPIが拒否するので使わない');
   const itemProps = schema.properties.items.items.properties;
   assert.ok(!('amountGrams' in itemProps), '量はAIに推定させない');
   assert.deepEqual(schema.properties.items.items.required, ['name', 'kcal', 'protein', 'fat', 'carb', 'salt']);

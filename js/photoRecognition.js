@@ -18,7 +18,6 @@ const RESPONSE_SCHEMA = {
   properties: {
     items: {
       type: 'array',
-      maxItems: 1,
       items: {
         type: 'object',
         properties: {
