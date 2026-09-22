@@ -5,6 +5,7 @@ import {
   parseRecognitionResponse,
   validateItems,
   foodFromItem,
+  formatRequestError,
 } from '../js/photoRecognition.js';
 
 test('buildRecognitionRequest: モデル・画像・構造化出力を含むリクエストを構築する', () => {
@@ -115,4 +116,21 @@ test('foodFromItem: amountGramsが0なら per100g は全て0', () => {
   const item = { name: 'x', amountGrams: 0, kcal: 100, protein: 1, fat: 1, carb: 1, salt: 1 };
   const food = foodFromItem(item);
   assert.equal(food.per100g.kcal, 0);
+});
+
+test('formatRequestError: 401はAPIキー無効の案内', () => {
+  assert.match(formatRequestError(401, null), /APIキーが無効/);
+});
+
+test('formatRequestError: APIのエラー本文があればHTTPコードとメッセージを含める', () => {
+  const body = { type: 'error', error: { type: 'invalid_request_error', message: 'maxItems is not supported' } };
+  const msg = formatRequestError(400, body);
+  assert.match(msg, /HTTP 400/);
+  assert.match(msg, /maxItems is not supported/);
+});
+
+test('formatRequestError: エラー本文が無ければHTTPコードのみ', () => {
+  const msg = formatRequestError(500, null);
+  assert.match(msg, /HTTP 500/);
+  assert.ok(!/undefined/.test(msg));
 });

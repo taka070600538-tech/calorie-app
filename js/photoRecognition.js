@@ -101,6 +101,16 @@ export function foodFromItem(item) {
   };
 }
 
+// APIのエラー応答({type:'error', error:{type, message}})から利用者向けメッセージを作る。
+// HTTPコードだけでは原因が分からないので、APIが返した理由文をそのまま添える。
+export function formatRequestError(status, body) {
+  if (status === 401) return 'APIキーが無効です。設定タブで確認してください。';
+  const detail = body && body.error && typeof body.error.message === 'string' ? body.error.message : '';
+  return detail
+    ? `認識リクエストが失敗しました(HTTP ${status}): ${detail}`
+    : `認識リクエストが失敗しました(HTTP ${status})。`;
+}
+
 export async function recognizePhoto(apiKey, base64Data, mediaType) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -113,8 +123,9 @@ export async function recognizePhoto(apiKey, base64Data, mediaType) {
     body: JSON.stringify(buildRecognitionRequest(base64Data, mediaType)),
   });
   if (!response.ok) {
-    if (response.status === 401) throw new Error('APIキーが無効です。設定タブで確認してください。');
-    throw new Error(`認識リクエストが失敗しました(HTTP ${response.status})。`);
+    let body = null;
+    try { body = await response.json(); } catch { /* 本文がJSONでなければ理由なしで表示 */ }
+    throw new Error(formatRequestError(response.status, body));
   }
   const json = await response.json();
   const parsed = parseRecognitionResponse(json);
