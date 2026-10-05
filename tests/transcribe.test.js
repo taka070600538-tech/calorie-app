@@ -62,6 +62,15 @@ test('buildDaySection: 食品マスタに無いfoodIdは「不明な食品」、
   assert.match(out, /えごま油$/m);
 });
 
+test('buildDaySection: アプリで並べ替えた順(order)で食事内容を並べる', () => {
+  const ordered = [
+    { id: 1, date: '2026-09-01', mealType: 'lunch', foodId: 'a', amountGrams: 10, kcal: 1, order: 1 },
+    { id: 2, date: '2026-09-01', mealType: 'lunch', foodId: 'b', amountGrams: 20, kcal: 1, order: 0 },
+  ];
+  const names = new Map([['a', 'レタス'], ['b', 'ごはん']]);
+  assert.match(buildDaySection(ordered, '2026-09-01', names), /昼食: 2kcal — ごはん 20g、レタス 10g/);
+});
+
 test('buildDaySection: その日のmealsが無ければnull', () => {
   assert.equal(buildDaySection(meals, '2026-01-01', foodNames), null);
 });

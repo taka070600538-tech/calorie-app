@@ -4,6 +4,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { sortMealsForDisplay } from '../js/mealOrder.js';
 
 const START = '<!-- calorie-app:start -->';
 const END = '<!-- calorie-app:end -->';
@@ -38,7 +39,8 @@ function round1(n) {
 // + 食事区分別のkcalと食事内容(食品名+量)。その日のmealsが無ければnull。
 // foodNamesはfoodId→食品名のMap(食品マスタに無いIDは「不明な食品」と表示)。
 export function buildDaySection(meals, date, foodNames = new Map()) {
-  const dayMeals = meals.filter((m) => m.date === date);
+  // アプリで並べ替えた順(order)どおりに食事内容を並べる。
+  const dayMeals = sortMealsForDisplay(meals.filter((m) => m.date === date));
   if (dayMeals.length === 0) return null;
 
   const total = { kcal: 0, protein: 0, fat: 0, carb: 0, salt: 0 };

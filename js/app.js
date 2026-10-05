@@ -1,4 +1,4 @@
-import { openDB, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal } from './db.js';
+import { openDB, getAllFoods, getMealsByDate, getGoals, deleteMeal, addMeal, updateMeal } from './db.js';
 import { openMealForm } from './mealForm.js';
 import { openPhotoMealForm } from './photoMealForm.js';
 import { renderFoodsView } from './foodForm.js';
@@ -10,6 +10,8 @@ import { renderGoalSummary, renderMealSection } from './render.js';
 import { formatDate, shiftDate } from './dateUtils.js';
 import { collectBackup, restoreBackup } from './backup.js';
 import { loadExerciseKcalByDate, exerciseKcalOn, BASAL_KCAL } from './exerciseSync.js';
+import { sortMealsForDisplay, assignOrder } from './mealOrder.js';
+import { bindMealDrag } from './mealDrag.js';
 
 const MEAL_TYPES = ['breakfast', 'lunch', 'dinner', 'snack'];
 
@@ -38,7 +40,7 @@ async function refreshDashboard() {
   });
 
   for (const mealType of MEAL_TYPES) {
-    const mealsOfType = meals.filter((m) => m.mealType === mealType);
+    const mealsOfType = sortMealsForDisplay(meals.filter((m) => m.mealType === mealType));
     renderMealSection(document.getElementById(`meal-${mealType}`), mealType, mealsOfType, foodsById);
   }
 }
@@ -150,6 +152,24 @@ function bindMealActions() {
   });
 }
 
+// ドラッグで並べ替えた順をorderとして保存する(並びは食事区分の中だけで変わる)。
+function bindMealReorder() {
+  bindMealDrag(document.getElementById('view-dashboard'), {
+    onReorder: async (orderedIds) => {
+      try {
+        for (const meal of assignOrder(state.meals, orderedIds)) {
+          await updateMeal(state.db, meal);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('並び順の保存に失敗しました。');
+      } finally {
+        await refreshDashboard();
+      }
+    },
+  });
+}
+
 async function copyPreviousDay() {
   const previousDate = shiftDate(state.date, -1);
   try {
@@ -201,6 +221,7 @@ async function init() {
 
   bindDateNav();
   bindMealActions();
+  bindMealReorder();
   bindCopyPreviousDay();
   bindNav();
   await refreshDashboard();

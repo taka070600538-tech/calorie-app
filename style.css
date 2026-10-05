@@ -186,6 +186,29 @@ body {
 
 .meal-item-name {
   font-weight: bold;
+  /* 名前をドラッグして並べ替える(名前部分だけスクロール・文字選択を無効にする) */
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.meal-item-name::before {
+  content: "⠿";
+  margin-right: var(--spacing-xs);
+  color: var(--color-text-muted);
+  font-weight: normal;
+}
+
+.meal-item.is-dragging {
+  background: var(--color-bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: var(--radius-sm);
+}
+
+.meal-item.is-dragging .meal-item-name {
+  cursor: grabbing;
 }
 
 .meal-item-actions {
