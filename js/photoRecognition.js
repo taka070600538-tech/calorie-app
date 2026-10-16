@@ -1,13 +1,14 @@
 // 1回の撮影で扱うのは中心の皿1つだけ。材料や端に映る食品に分解せず、1つの料理メニューとして返させる。
-// 量(g)は写真からの推定誤差が大きいため AI には推定させず、栄養値は100gあたりで返させて
-// アプリ側で仮の量100gを付ける(ユーザーが実測した皿の重量に修正すると比例換算される)。
+// 栄養値は100gあたりで返させ、アプリ側で仮の量100gを付ける(ユーザーが実測した皿の重量に修正すると比例換算される)。
+// 皿の推定重量(estimatedGrams)は誤差が大きいため、確認画面で量欄の下に「参考」として併記するだけで、量欄や記録には使わない。
 const RECOGNITION_PROMPT = `この写真の中心にある皿(器)1つだけを対象にしてください。
 その皿に盛られた料理を、材料や部品に分解せず、1つの料理メニューとして1品だけ特定してください
 (品名は代表的なメニュー名でよく、多少ずれていても構いません)。
 端に映り込んだ別の皿・付け合わせ・飲み物・調味料などは無視してください。
 その料理の日本語のメニュー名と、100gあたりの栄養値
 (カロリーkcal・タンパク質g・脂質g・糖質g・塩分g)を推定してください。
-量(グラム)は推定しないでください。
+加えて、皿に盛られた料理のおおよその重量(g、整数)を estimatedGrams として推定してください。
+これは参考値なので誤差が大きくて構いません。推定できない場合は 0 にしてください。
 食べ物が写っていない場合は items を空配列にしてください。`;
 
 // アプリ側で付ける仮の量。ユーザーが確認画面で実測値に修正する前提の形式的な値。
@@ -27,8 +28,9 @@ const RESPONSE_SCHEMA = {
           fat: { type: 'number' },
           carb: { type: 'number' },
           salt: { type: 'number' },
+          estimatedGrams: { type: 'number' },
         },
-        required: ['name', 'kcal', 'protein', 'fat', 'carb', 'salt'],
+        required: ['name', 'kcal', 'protein', 'fat', 'carb', 'salt', 'estimatedGrams'],
         additionalProperties: false,
       },
     },
@@ -73,7 +75,7 @@ export function validateItems(items) {
     return numericKeys.every((key) => typeof item[key] === 'number' && Number.isFinite(item[key]) && item[key] >= 0);
   });
   if (!first) return [];
-  return [{
+  const result = {
     name: first.name,
     amountGrams: PLACEHOLDER_GRAMS,
     kcal: first.kcal,
@@ -81,7 +83,13 @@ export function validateItems(items) {
     fat: first.fat,
     carb: first.carb,
     salt: first.salt,
-  }];
+  };
+  // 推定重量は参考表示用。正の有限数のときだけ(整数に丸めて)付ける。
+  const est = first.estimatedGrams;
+  if (typeof est === 'number' && Number.isFinite(est) && est > 0) {
+    result.estimatedGrams = Math.round(est);
+  }
+  return [result];
 }
 
 export function foodFromItem(item) {

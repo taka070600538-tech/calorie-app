@@ -68,7 +68,7 @@ export function openPhotoMealForm({ modalRoot, db, mealType, date, foods, onSave
             <button type="button" class="photo-item-remove" data-action="remove-item">削除</button>
           </div>
           <div class="photo-item-grid">
-            <label>量(g)<input type="number" class="photo-item-field" data-field="amountGrams" value="${item.amountGrams}" min="0" step="1"></label>
+            <label>量(g)<input type="number" class="photo-item-field" data-field="amountGrams" value="${item.amountGrams}" min="0" step="1">${item.estimatedGrams ? `<button type="button" class="photo-item-estimate" data-action="apply-estimate" data-grams="${item.estimatedGrams}">参考: 写真からの推定 約${item.estimatedGrams}g(誤差大)・タップで反映</button>` : ''}</label>
             <label>kcal<input type="number" class="photo-item-field" data-field="kcal" value="${item.kcal}" min="0" step="1"></label>
             <label>タンパク質(g)<input type="number" class="photo-item-field" data-field="protein" value="${item.protein}" min="0" step="0.1"></label>
             <label>脂質(g)<input type="number" class="photo-item-field" data-field="fat" value="${item.fat}" min="0" step="0.1"></label>
@@ -83,7 +83,7 @@ export function openPhotoMealForm({ modalRoot, db, mealType, date, foods, onSave
       <div class="modal-overlay">
         <div class="modal photo-confirm-modal">
           <h2>${MEAL_TYPE_LABELS[mealType]}を写真から追加</h2>
-          <p class="settings-note">量は100gの仮置きです。実測した皿の重量に修正すると、栄養値が自動で換算されます。品名・栄養値も必要に応じて修正できます。</p>
+          <p class="settings-note">量は100gの仮置きです。写真からの推定重量は参考値なので、実測した皿の重量に修正してください。修正すると栄養値が自動で換算されます。品名・栄養値も必要に応じて修正できます。</p>
           <ul class="photo-item-list">${rowsHtml}</ul>
           <div class="modal-actions">
             <button type="button" id="photo-save">この内容で記録</button>
@@ -96,6 +96,13 @@ export function openPhotoMealForm({ modalRoot, db, mealType, date, foods, onSave
     modalRoot.querySelector('.photo-item-list').addEventListener('click', (event) => {
       const btn = event.target.closest('[data-action="remove-item"]');
       if (btn) btn.closest('.photo-item').remove();
+      const est = event.target.closest('[data-action="apply-estimate"]');
+      if (est) {
+        event.preventDefault();
+        const amountInput = est.closest('.photo-item').querySelector('.photo-item-field[data-field="amountGrams"]');
+        amountInput.value = est.dataset.grams;
+        amountInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
     });
 
     // 量を修正したら栄養値も認識時の推定値から比例換算して追従させる

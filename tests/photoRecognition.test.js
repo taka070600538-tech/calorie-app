@@ -22,16 +22,20 @@ test('buildRecognitionRequest: モデル・画像・構造化出力を含むリ�
   assert.equal(schema.additionalProperties, false);
 });
 
-test('buildRecognitionRequest: 応答は1皿1品のみ・量(g)はAIに推定させない', () => {
+test('buildRecognitionRequest: 推定重量は参考値(estimatedGrams)として返させ、量(amountGrams)はスキーマに入れない', () => {
   const req = buildRecognitionRequest('BASE64DATA', 'image/jpeg');
   const schema = req.output_config.format.schema;
   // Anthropicの構造化出力は配列の件数制約(maxItems等)に未対応でHTTP 400になる。
   // 1件に絞るのはアプリ側(validateItems)で行う。
   assert.ok(!('maxItems' in schema.properties.items), 'maxItemsはAPIが拒否するので使わない');
   const itemProps = schema.properties.items.items.properties;
-  assert.ok(!('amountGrams' in itemProps), '量はAIに推定させない');
-  assert.deepEqual(schema.properties.items.items.required, ['name', 'kcal', 'protein', 'fat', 'carb', 'salt']);
+  assert.ok(!('amountGrams' in itemProps), 'amountGramsはスキーマに入れない');
+  assert.deepEqual(itemProps.estimatedGrams, { type: 'number' });
+  assert.deepEqual(schema.properties.items.items.required, ['name', 'kcal', 'protein', 'fat', 'carb', 'salt', 'estimatedGrams']);
   const prompt = req.messages[0].content.find((b) => b.type === 'text').text;
+  assert.match(prompt, /推定/);
+  assert.match(prompt, /参考/);
+  assert.match(prompt, /estimatedGrams/);
   assert.match(prompt, /中心/);
   assert.match(prompt, /1品|一品|1つ/);
   assert.match(prompt, /100g|100グラム/);
@@ -70,6 +74,22 @@ test('validateItems: AIが量を返してきても100gで上書きする', () =>
   const items = [{ name: 'カレーライス', amountGrams: 450, kcal: 180, protein: 4, fat: 6, carb: 28, salt: 0.9 }];
   const result = validateItems(items);
   assert.equal(result[0].amountGrams, 100);
+});
+
+test('validateItems: estimatedGramsが正の数なら四捨五入して含め、amountGramsは100のまま', () => {
+  const items = [{ name: '丼', estimatedGrams: 250.4, kcal: 150, protein: 5, fat: 3, carb: 25, salt: 0.5 }];
+  const result = validateItems(items);
+  assert.equal(result[0].estimatedGrams, 250);
+  assert.equal(result[0].amountGrams, 100);
+});
+
+test('validateItems: estimatedGramsが0・負・文字列・未定義なら含めない', () => {
+  for (const bad of [0, -10, '250', undefined, NaN, null]) {
+    const items = [{ name: '丼', estimatedGrams: bad, kcal: 150, protein: 5, fat: 3, carb: 25, salt: 0.5 }];
+    const result = validateItems(items);
+    assert.equal('estimatedGrams' in result[0], false, `bad=${String(bad)}`);
+    assert.equal(result[0].amountGrams, 100);
+  }
 });
 
 test('validateItems: 複数返ってきても先頭の1品だけにする', () => {

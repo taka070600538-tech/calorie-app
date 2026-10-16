@@ -395,6 +395,21 @@ body {
   width: 100%;
 }
 
+.photo-item-estimate {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 0;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: left;
+  text-decoration: underline dotted;
+  white-space: normal;
+  cursor: pointer;
+}
+
 .photo-loading {
   padding: var(--spacing-md) 0;
 }
